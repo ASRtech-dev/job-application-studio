@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme {
+  --color-brand-navy: #10233f;
+  --color-brand-slate: #1f2937;
+  --color-brand-blue: #6d8ead;
+  --color-brand-divider: #d8dee8;
+}
+
+body {
+  background-color: #0a0f1d;
+  color: #ededed;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom Scrollbar for dashboard panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0f1d;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6d8ead;
+}
+
+/* A4 Print Layout Rules */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-rendering: geometricPrecision !important;
+    font-variant-ligatures: none !important;
+    font-feature-settings: "liga" 0, "clig" 0 !important;
+  }
+  
+  /* Hide UI elements on printing */
+  header, footer, button, .zoom-controls, .editor-panel, .page-break-indicator {
+    display: none !important;
+  }
+
+  /* Force page dimensions for A4 */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* Prevent elements from breaking mid-content */
+  .break-avoid, .signature-block, .project-entry, li {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  p, ul {
+    orphans: 2;
+    widows: 2;
+  }
+
+  h2, h3 {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+}

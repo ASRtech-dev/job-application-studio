@@ -1,0 +1,120 @@
+{
+  "fullName": "Alex Morgan",
+  "location": "Berlin, Germany",
+  "email": "alex.morgan@example.com",
+  "phone": "+49 151 2345678",
+  "links": [
+    { "label": "LinkedIn", "url": "https://linkedin.com/in/alexmorgan" },
+    { "label": "GitHub", "url": "https://github.com/alexmorgan-dev" },
+    { "label": "Portfolio", "url": "https://alexmorgan.example.com" }
+  ],
+  "availability": "Available immediately",
+  "workModes": ["Hybrid", "Remote", "On-site"],
+  "languages": [
+    { "language": "English", "level": "C2 / Native" },
+    { "language": "German", "level": "B2 / Professional" },
+    { "language": "Spanish", "level": "B1 / Intermediate" }
+  ],
+  "headlineVariants": [
+    {
+      "category": "Operations & Process Automation",
+      "headline": "Business Operations Analyst · Process Optimization · Workflow Automation"
+    },
+    {
+      "category": "Technical Solutions",
+      "headline": "Workflow Solutions Engineer · Automation Architecture · Integrations"
+    }
+  ],
+  "profileVariants": [
+    {
+      "category": "Operations & Process Automation",
+      "text": "Results-oriented Business Operations Analyst with 5+ years of experience streamlining complex processes and shipping production automations across international teams. Combines structured BPMN process mapping, API integrations, and hands-on scripting to reduce manual toil and elevate reporting precision."
+    }
+  ],
+  "achievementsPool": [
+    "Redesigned multi-department ticket dispatch workflows, cutting end-to-end turnaround time by 65%.",
+    "Built and standardized an operational knowledge repository of 100+ SOPs adopted across 8 regional teams.",
+    "Automated recurring financial variance reporting scripts, eliminating 15 hours of manual spreadsheet work weekly."
+  ],
+  "skillsPool": [
+    {
+      "group": "Process & Operations",
+      "skills": ["Process Mapping", "BPMN 2.0", "Lean Operations", "SOP Standardization", "Root-Cause Analysis"]
+    },
+    {
+      "group": "Automation & Integration",
+      "skills": ["n8n", "Make", "REST APIs", "Webhooks", "JSON", "Python Scripting"]
+    },
+    {
+      "group": "Data & Systems",
+      "skills": ["PostgreSQL", "SQL Queries", "Salesforce", "Jira Service Desk", "Tableau"]
+    },
+    {
+      "group": "Collaboration & Delivery",
+      "skills": ["Cross-functional Alignment", "Stakeholder Management", "Agile Cadences", "Audit Compliance"]
+    }
+  ],
+  "experienceHistory": [
+    {
+      "id": "exp-1",
+      "jobTitle": "Senior Operations Analyst",
+      "company": "Horizon Global Technologies GmbH",
+      "location": "Berlin, Germany",
+      "dates": "Jan 2023 – Present",
+      "summary": "",
+      "bullets": [
+        "Mapped and standardized cross-departmental operations flows across 8 European regions using BPMN standards.",
+        "Engineered automated ticket escalation workflows in n8n and REST APIs, improving first-response SLAs by **45%**.",
+        "Authored and published over 60 Standard Operating Procedures in a central operational repository.",
+        "Built automated Python data sync routines between CRM and internal PostgreSQL data warehouses."
+      ],
+      "roleFamilies": ["Operations", "Process Improvement", "Automation"],
+      "keywords": ["BPMN", "n8n", "Python", "PostgreSQL", "SOP"],
+      "include": true
+    },
+    {
+      "id": "exp-2",
+      "jobTitle": "Business Process Specialist",
+      "company": "Apex Logistics Solutions",
+      "location": "Berlin, Germany",
+      "dates": "Mar 2021 – Dec 2022",
+      "summary": "",
+      "bullets": [
+        "Audited order-fulfillment bottlenecks and implemented root-cause remediation workflows.",
+        "Automated daily shipping variance dashboards, reducing manual spreadsheet reporting by **12 hours weekly**.",
+        "Facilitated cross-functional alignment sessions between operations, finance, and logistics leads."
+      ],
+      "roleFamilies": ["Process Analysis", "Reporting"],
+      "keywords": ["Process Audit", "Dashboards", "Root-Cause Analysis"],
+      "include": true
+    }
+  ],
+  "projectsHistory": [
+    {
+      "id": "proj-1",
+      "title": "Dispatch Flow Optimizer",
+      "role": "Lead Architect",
+      "dates": "2024",
+      "description": "Open-source queue orchestration prototype for high-volume customer dispatch.",
+      "bullets": [
+        "Implemented webhook ingestion pipelines processing 5,000+ daily payload events.",
+        "Integrated rules-based routing engine cutting backlog accumulation by **40%**."
+      ],
+      "include": true
+    }
+  ],
+  "educationHistory": [
+    {
+      "id": "edu-1",
+      "degree": "B.Sc. in Business Informatics / Information Systems",
+      "institution": "Technical University of Berlin",
+      "period": "2016 – 2020",
+      "description": "Core curriculum in enterprise systems architecture, database design, and software engineering."
+    }
+  ],
+  "certificationsHistory": [
+    { "id": "cert-1", "name": "Lean Six Sigma Green Belt" },
+    { "id": "cert-2", "name": "BPMN 2.0 Business Process Modeling Professional" },
+    { "id": "cert-3", "name": "n8n Workflow Automation Specialist" }
+  ]
+}

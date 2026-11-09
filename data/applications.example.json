@@ -1,0 +1,246 @@
+[
+  {
+    "id": "app_demo_example",
+    "company": "Kallisto Cloud GmbH",
+    "roleTitle": "Operations & Process Analyst",
+    "dateCreated": "2026-03-01T10:00:00.000Z",
+    "dateModified": "2026-03-01T10:00:00.000Z",
+    "status": "draft",
+    "language": "English",
+    "jobLocation": "Berlin, Germany / Hybrid",
+    "workModel": "Hybrid",
+    "notes": "Sample demo application showcasing ATS-optimized CV and DIN 5008 cover letter formatting.",
+    "interviewDate": "",
+    "recruiterContact": "Talent Acquisition Team",
+    "salaryOffer": "",
+    "jobDescription": "Looking for an Operations & Process Analyst experienced in BPMN mapping, workflow automation with n8n/Make, and cross-functional operational steering in Berlin.",
+    "schemaVersion": 2,
+    "importMetadata": null,
+    "roleClassification": {
+      "type": "coreTarget",
+      "seniorityLevel": "mid",
+      "roleFamily": "Business Process Operations",
+      "applicationPriority": "high",
+      "outputMode": "standard",
+      "recommendedPositioning": "Highlight 5+ years of multi-market operations steering, BPMN process standardization, and production n8n automations.",
+      "cvIntensity": "Medium",
+      "overqualificationRisk": "Low",
+      "dealBreakerRisk": "Low"
+    },
+    "formFieldAnswers": {
+      "shortMotivationMessage": "With over 5 years of hands-on operations analysis and workflow automation experience in Berlin, I specialize in turning complex multi-market workflows into structured, automated operating models.",
+      "whyThisRole": "The focus on scalable process architecture and system integrations matches my track record designing automated workflows and single-source-of-truth repositories.",
+      "whyThisCompany": "Kallisto Cloud combines enterprise infrastructure reliability with practical automation innovation.",
+      "additionalMessage": "Available immediately for on-site or hybrid collaboration in Berlin.",
+      "availability": "Available immediately",
+      "degreeExplanation": "Completed B.Sc. in Business Informatics from Technical University of Berlin.",
+      "workPermitGermany": "Yes",
+      "website": "https://alexmorgan.example.com",
+      "linkedin": "https://linkedin.com/in/alexmorgan"
+    },
+    "salaryPositioning": {
+      "recommendedRangeEUR": "60,000 – 70,000 EUR",
+      "safeNumberEUR": "65,000 EUR",
+      "ambitiousNumberEUR": "72,000 EUR",
+      "riskComment": "Aligns with current Berlin mid-to-senior operations analyst market bands."
+    },
+    "keywordStrategy": {
+      "mustIncludeATSKeywords": ["BPMN", "Process Mapping", "Workflow Automation", "n8n", "SOP", "KPI Reporting"],
+      "niceToHaveKeywords": ["Python", "PostgreSQL", "REST APIs", "Lean Six Sigma"],
+      "humanNarrativeKeywords": ["operational bridge", "single source of truth", "evidence-driven steering"],
+      "avoidOrMinimizeKeywords": ["unsupported tools", "theoretical concepts"]
+    },
+    "recruiterConcernHandling": {
+      "likelyConcerns": [
+        {
+          "concern": "Does the candidate balance technical scripting with non-technical business communication?",
+          "howToNeutralize": "Emphasize cross-functional alignment workshops and documented SOPs alongside API scripting.",
+          "sentenceToUse": "I regularly translate technical data flows into clear, stakeholder-facing operating standards and executive summaries."
+        }
+      ]
+    },
+    "fitAssessment": {
+      "scoreOutOf10": 8.8,
+      "probabilityTier": "High",
+      "summary": "Strong direct alignment on BPMN process mapping, CRM automation, and cross-functional reporting cadences.",
+      "bestAngles": ["5+ years operations experience in Berlin", "Hands-on n8n and API integration delivery", "Documented repository of 100+ SOPs"],
+      "mainRisks": ["None identified for core requirements"],
+      "recommendedApplicationStrategy": "Position as a pragmatic process architect who delivers both documentation discipline and practical automation.",
+      "recommendedTone": "Direct, evidence-driven, analytical, zero corporate fluff.",
+      "recommendedCVVersion": "ATS Clean (2-Page)",
+      "applyOrSkip": "Apply"
+    },
+    "qualityControl": {
+      "directEvidenceUsed": ["Horizon Global Operations", "Apex Logistics Dashboards"],
+      "transferableEvidenceUsed": ["n8n workflow engineering"],
+      "adaptableSkillsUsed": ["Python reporting automation"],
+      "potentialOverclaimsAvoided": ["No unverified tools claimed"],
+      "atsKeywordsIncluded": ["BPMN", "n8n", "SOP", "KPI", "Process Mapping"],
+      "humanRecruiterImpression": "Clear, grounded operator with measurable impact metrics and structured execution.",
+      "finalContentRisk": "Low",
+      "oneSentencePositioning": "Operations Analyst bridging process architecture and practical workflow automation."
+    },
+    "cvContent": {
+      "header": {
+        "fullName": "Alex Morgan",
+        "headline": "Business Operations Analyst · Process Optimization · Workflow Automation",
+        "location": "Berlin, Germany",
+        "email": "alex.morgan@example.com",
+        "phone": "+49 151 2345678",
+        "links": [
+          { "label": "LinkedIn", "url": "https://linkedin.com/in/alexmorgan" },
+          { "label": "GitHub", "url": "https://github.com/alexmorgan-dev" },
+          { "label": "Portfolio", "url": "https://alexmorgan.example.com" }
+        ],
+        "availability": "Available immediately",
+        "languages": [
+          { "language": "English", "level": "C2 / Native" },
+          { "language": "German", "level": "B2 / Professional" },
+          { "language": "Spanish", "level": "B1 / Intermediate" }
+        ]
+      },
+      "professionalProfile": "Results-oriented Business Operations Analyst with 5+ years of experience streamlining complex processes and shipping production automations across international teams. Combines structured BPMN process mapping, API integrations, and hands-on scripting to reduce manual toil and elevate reporting precision.",
+      "keyAchievements": [
+        "Redesigned multi-department ticket dispatch workflows, cutting end-to-end turnaround time by **65%**.",
+        "Built and standardized an operational knowledge repository of **100+ SOPs** adopted across 8 regional teams.",
+        "Automated recurring financial variance reporting scripts, eliminating **15 hours** of manual spreadsheet work weekly."
+      ],
+      "coreSkills": [
+        {
+          "group": "Process & Operations",
+          "skills": ["Process Mapping", "BPMN 2.0", "Lean Operations", "SOP Standardization", "Root-Cause Analysis"]
+        },
+        {
+          "group": "Automation & Integration",
+          "skills": ["n8n", "Make", "REST APIs", "Webhooks", "JSON", "Python Scripting"]
+        },
+        {
+          "group": "Data & Systems",
+          "skills": ["PostgreSQL", "SQL Queries", "Salesforce", "Jira Service Desk", "Tableau"]
+        },
+        {
+          "group": "Collaboration & Delivery",
+          "skills": ["Cross-functional Alignment", "Stakeholder Management", "Agile Cadences", "Audit Compliance"]
+        }
+      ],
+      "experience": [
+        {
+          "id": "exp-1",
+          "jobTitle": "Senior Operations Analyst",
+          "company": "Horizon Global Technologies GmbH",
+          "location": "Berlin, Germany",
+          "dates": "Jan 2023 – Present",
+          "summary": "",
+          "bullets": [
+            "Mapped and standardized cross-departmental operations flows across 8 European regions using BPMN standards.",
+            "Engineered automated ticket escalation workflows in n8n and REST APIs, improving first-response SLAs by **45%**.",
+            "Authored and published over 60 Standard Operating Procedures in a central operational repository.",
+            "Built automated Python data sync routines between CRM and internal PostgreSQL data warehouses."
+          ],
+          "include": true
+        },
+        {
+          "id": "exp-2",
+          "jobTitle": "Business Process Specialist",
+          "company": "Apex Logistics Solutions",
+          "location": "Berlin, Germany",
+          "dates": "Mar 2021 – Dec 2022",
+          "summary": "",
+          "bullets": [
+            "Audited order-fulfillment bottlenecks and implemented root-cause remediation workflows.",
+            "Automated daily shipping variance dashboards, reducing manual spreadsheet reporting by **12 hours weekly**.",
+            "Facilitated cross-functional alignment sessions between operations, finance, and logistics leads."
+          ],
+          "include": true
+        }
+      ],
+      "projects": [
+        {
+          "id": "proj-1",
+          "title": "Dispatch Flow Optimizer",
+          "role": "Lead Architect",
+          "dates": "2024",
+          "description": "Open-source queue orchestration prototype for high-volume customer dispatch.",
+          "bullets": [
+            "Implemented webhook ingestion pipelines processing 5,000+ daily payload events.",
+            "Integrated rules-based routing engine cutting backlog accumulation by **40%**."
+          ],
+          "include": true
+        }
+      ],
+      "education": [
+        {
+          "id": "edu-1",
+          "degree": "B.Sc. in Business Informatics / Information Systems",
+          "institution": "Technical University of Berlin",
+          "period": "2016 – 2020",
+          "description": "Core curriculum in enterprise systems architecture, database design, and software engineering."
+        }
+      ],
+      "certifications": [
+        { "id": "cert-1", "name": "Lean Six Sigma Green Belt" },
+        { "id": "cert-2", "name": "BPMN 2.0 Business Process Modeling Professional" },
+        { "id": "cert-3", "name": "n8n Workflow Automation Specialist" }
+      ]
+    },
+    "coverLetterContent": {
+      "company": "Kallisto Cloud GmbH",
+      "roleTitle": "Operations & Process Analyst",
+      "subjectLine": "Application for Operations & Process Analyst",
+      "positioningLine": "Business Operations Analyst · Process Optimization · Workflow Automation",
+      "dateLine": "Berlin, 1 March 2026",
+      "greeting": "Dear Kallisto Cloud Hiring Team,",
+      "paragraphs": [
+        {
+          "type": "opening",
+          "text": "Kallisto Cloud's work bridging infrastructure scale with reliable operations sits at an essential intersection. What makes this Operations & Process Analyst role compelling to me is the opportunity to replace fragmented handoffs with structured, automated operating workflows."
+        },
+        {
+          "type": "evidence",
+          "text": "Over the past 5 years in Berlin, I have focused on translating operational friction into measurable workflow improvements. At Horizon Global, I helped map cross-regional processes using BPMN and implemented n8n routing automations that reduced ticket escalation turnaround times by 65%."
+        },
+        {
+          "type": "fit",
+          "text": "This operational background aligns closely with Kallisto Cloud's current needs: maintaining reliable steering cadences, documenting standard procedures across cross-functional teams, and integrating source systems through clean webhooks and API scripting."
+        },
+        {
+          "type": "contribution",
+          "text": "In this role, I would deliver a disciplined operating rhythm from day one: documenting As-Is workflows with precision, identifying operational bottlenecks before they impact customer SLAs, and delivering pragmatic automation prototypes."
+        },
+        {
+          "type": "closing",
+          "text": "I would welcome the opportunity to discuss how my background in business process mapping, documentation governance, and workflow automation can support Kallisto Cloud's objectives."
+        }
+      ],
+      "closingPhrase": "Kind regards,",
+      "signatureName": "Alex Morgan",
+      "sidebarLabel": "COVER LETTER",
+      "sidebarRole": "Operations & Process Analyst",
+      "sidebarCompany": "Kallisto Cloud GmbH"
+    },
+    "templateSettings": {
+      "cvTemplate": "ats-clean",
+      "coverLetterTemplate": "asr-sidebar",
+      "accentColor": "#10233f",
+      "fontFamily": "Inter",
+      "pageSize": "A4",
+      "fontSize": 10,
+      "lineSpacing: 1.32,
+      "sectionSpacing": 12,
+      "showKeyAchievements": true,
+      "showProjects": true
+    },
+    "assetSettings": {
+      "signature": {
+        "enabled": false,
+        "widthPx": 160,
+        "alignment": "left"
+      },
+      "photo": {
+        "enabled": false,
+        "cropStyle": "circle",
+        "placement": "sidebar"
+      }
+    }
+  }
+]
