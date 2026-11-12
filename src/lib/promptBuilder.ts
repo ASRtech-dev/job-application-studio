@@ -1,29 +1,152 @@
 import { MasterCv } from "./schemas";
 
+export type EmphasisHighlightId =
+  | "ai-agents-rag"
+  | "process-sops-bpmn"
+  | "n8n-make-orchestration"
+  | "crm-queue-architecture"
+  | "lean-six-sigma-audit"
+  | "eu-ai-act-compliance"
+  | "product-shipping"
+  | "internal-consulting"
+  | "jira-engineering-bridge"
+  | "open-source-portfolio";
+
 export interface PromptBuilderOptions {
   targetLanguage: "auto" | "English" | "German" | "Spanish";
   strategyAngle:
     | "auto"
+    | "ai_agents_automation"
     | "process_operations"
-    | "technical_automation"
+    | "business_steering_six_sigma"
+    | "technical_operations_jira"
     | "quality_governance"
     | "leadership_growth";
+  tonePreset?:
+    | "auto"
+    | "hands_on_builder"
+    | "internal_consultant"
+    | "executive_operator";
+  cvLengthMode?: "standard_2page" | "compact_1page" | "comprehensive";
+  emphasisHighlights?: EmphasisHighlightId[];
+  customInstructions?: string;
   companyHint?: string;
   roleTitleHint?: string;
   jobDescription?: string;
   candidateProfile?: MasterCv;
 }
 
+export const EMPHASIS_HIGHLIGHT_CATALOG: {
+  id: EmphasisHighlightId;
+  label: string;
+  shortTag: string;
+  promptDirective: string;
+}[] = [
+  {
+    id: "ai-agents-rag",
+    label: "AI Agents, LLM Orchestration & RAG Pipelines",
+    shortTag: "AI Agents & RAG",
+    promptDirective:
+      "Highlight agentic AI architectures, LLM tool-calling, structured JSON outputs, and Retrieval-Augmented Generation (RAG) pipelines from the candidate's verified profile.",
+  },
+  {
+    id: "process-sops-bpmn",
+    label: "BPMN 2.0 Mapping, SOP Repositories & Process Architecture",
+    shortTag: "BPMN & SOPs",
+    promptDirective:
+      "Emphasize end-to-end BPMN 2.0 process mapping, authoring standardized SOP repositories as a single source of truth, and designing greenfield operational workflows.",
+  },
+  {
+    id: "n8n-make-orchestration",
+    label: "Advanced n8n, Make & REST API Automation",
+    shortTag: "n8n & Make",
+    promptDirective:
+      "Frame workflow automation (n8n, Make, REST APIs, Webhooks, Python) as production-grade systems orchestration rather than basic no-code usage.",
+  },
+  {
+    id: "crm-queue-architecture",
+    label: "CRM / Ticketing Queue Restructuring & Routing",
+    shortTag: "CRM & Ticketing",
+    promptDirective:
+      "Highlight large-scale CRM/Salesforce/Service Desk queue restructuring, deterministic ticket routing, SLA acceleration, and human-error elimination.",
+  },
+  {
+    id: "lean-six-sigma-audit",
+    label: "Lean Six Sigma Data Auditing & Cost Recovery",
+    shortTag: "Lean Six Sigma ROI",
+    promptDirective:
+      "Showcase Lean Six Sigma root-cause analysis on large operational datasets to uncover control gaps, eliminate financial leakage, and recover revenue.",
+  },
+  {
+    id: "eu-ai-act-compliance",
+    label: "EU AI Act, GDPR & Regulatory Governance",
+    shortTag: "Regulatory & AI Act",
+    promptDirective:
+      "Highlight regulatory compliance, EU AI Act / GDPR risk governance, audit-ready documentation, and human-in-the-loop operational safeguards.",
+  },
+  {
+    id: "product-shipping",
+    label: "End-to-End Product Shipping & Full-Stack Execution",
+    shortTag: "Shipped Products",
+    promptDirective:
+      "Highlight end-to-end product delivery, full-stack or mobile shipping, relational database schema design, and live user adoption.",
+  },
+  {
+    id: "internal-consulting",
+    label: "Internal Process Consulting & Executive Advisory",
+    shortTag: "Process Consulting",
+    promptDirective:
+      "Position the candidate's operational tenure as hands-on internal process consulting: advising department heads, diagnosing bottlenecks, and steering greenfield process design.",
+  },
+  {
+    id: "jira-engineering-bridge",
+    label: "Jira / Atlassian Administration & Engineering-Stakeholder Bridge",
+    shortTag: "Jira & Tech Bridge",
+    promptDirective:
+      "Emphasize acting as the operational-technical bridge in Jira/Atlassian between business stakeholders and engineering teams to triage incidents and translate root causes into specs.",
+  },
+  {
+    id: "open-source-portfolio",
+    label: "Public GitHub Portfolio & Custom Automation Tooling",
+    shortTag: "GitHub Portfolio",
+    promptDirective:
+      "Emphasize the candidate's builder mindset through custom-built applications, self-hosted tools, and open-source repositories.",
+  },
+];
+
 const ANGLE_INSTRUCTIONS: Record<PromptBuilderOptions["strategyAngle"], string> = {
   auto: "Analyze the job description and autonomously select the highest-converting positioning angle based on the candidate's verified background.",
+  ai_agents_automation:
+    "Prioritize AI Agents & Automations, n8n & Make orchestration, RAG knowledge bases, Python/SQL pipelines, and AI-driven operational cost reduction.",
   process_operations:
-    "Prioritize Business Process Analysis, Operations Steering, KPI Reporting, As-Is/To-Be Mapping (BPMN), and SOP Standardization across operational workflows.",
-  technical_automation:
-    "Prioritize Workflow Engineering, Automation, API integrations, scripting, tool orchestration (n8n, Make, Python), and replacing manual reports with automated pipelines.",
+    "Prioritize Business Process Analysis, End-to-End Greenfield Workflow Design, BPMN 2.0 Mapping, SOP Standardization, and Internal Process Consulting.",
+  business_steering_six_sigma:
+    "Prioritize Lean Six Sigma Root-Cause Analysis, High-Volume Data Auditing, Financial Leakage Discovery, KPI Governance, and Executive Decision Support.",
+  technical_operations_jira:
+    "Prioritize Jira Incident & Escalation Bridging between Engineering and Stakeholders, CRM/Ticketing Queue Architecture, API/Webhook Integrations, and Technical Operations.",
   quality_governance:
-    "Prioritize Process Compliance Auditing, Quality Assurance Reporting, Risk Mitigation, Root-Cause Analysis, Lean Six Sigma methodologies, and SOP Governance.",
+    "Prioritize Process Compliance Auditing, EU AI Act & European Regulatory Governance, Quality Assurance Reporting, and Risk Mitigation.",
   leadership_growth:
     "Prioritize Cross-functional Coordination, Stakeholder Management, Service Delivery Execution, and Operational Enablement.",
+};
+
+const TONE_INSTRUCTIONS: Record<NonNullable<PromptBuilderOptions["tonePreset"]>, string> = {
+  auto: "Calibrate tone dynamically to match the company culture (startup/scale-up vs. enterprise/corporate) while keeping it 100% human, direct, and concrete.",
+  hands_on_builder:
+    "Use a crisp, technical, builder-first operator voice: emphasize shipping code/workflows, APIs, schemas, queues, and measurable latency/cost reductions.",
+  internal_consultant:
+    "Use an advisory, structured consulting voice: emphasize stakeholder alignment, diagnostic discovery, greenfield process design, and executive steering.",
+  executive_operator:
+    "Use a high-ownership operational governance voice: emphasize multi-market scale, P&L/revenue protection, SLA governance, and cross-border standardization.",
+};
+
+const LENGTH_INSTRUCTIONS: Record<NonNullable<PromptBuilderOptions["cvLengthMode"]>, string> = {
+  standard_2page:
+    "Target the Clean Berlin Executive 2-Page CV Budget (360–440 words total across the CV) with generous whitespace and crisp 1-line bullets.",
+  compact_1page:
+    "Target an ultra-compact 1-Page Executive CV Budget (280–340 words total): keep 3 bullets for the most recent role, 1–2 bullets for earlier roles, and 1–2 top projects.",
+  comprehensive:
+    "Target a detailed Technical & Operational CV Budget (420–480 words total): include 4 bullets on key roles and 3 projects with concrete architectural and metric detail.",
 };
 
 function formatTodayLabel(lang: PromptBuilderOptions["targetLanguage"]): string {
@@ -55,7 +178,23 @@ export function buildExpertCommitteePrompt(options: PromptBuilderOptions): strin
       ? `Detect the primary language of the Job Description. Set "language" to exactly "English", "German", or "Spanish", and write 100% of the CV and Cover Letter content in that single language without mixing languages.`
       : `Set "language" to "${options.targetLanguage}" and write 100% of the CV and Cover Letter strictly in ${options.targetLanguage} (zero language mixing).`;
 
-  const angleInstruction = ANGLE_INSTRUCTIONS[options.strategyAngle];
+  const angleInstruction = ANGLE_INSTRUCTIONS[options.strategyAngle] || ANGLE_INSTRUCTIONS.auto;
+  const toneInstruction = TONE_INSTRUCTIONS[options.tonePreset || "auto"];
+  const lengthInstruction = LENGTH_INSTRUCTIONS[options.cvLengthMode || "standard_2page"];
+
+  const selectedHighlights = (options.emphasisHighlights || [])
+    .map((id) => EMPHASIS_HIGHLIGHT_CATALOG.find((item) => item.id === id))
+    .filter(Boolean);
+
+  const highlightsBlock =
+    selectedHighlights.length > 0
+      ? `\n\n### USER-SELECTED PRIORITY HIGHLIGHTS (MUST BE PROMINENTLY FEATURED IN CV & COVER LETTER):\n` +
+        selectedHighlights.map((h, i) => `${i + 1}. **${h!.label}**: ${h!.promptDirective}`).join("\n")
+      : "";
+
+  const customInstructionsBlock = options.customInstructions?.trim()
+    ? `\n\n### USER CUSTOM INSTRUCTIONS / SPECIAL FOCUS FOR THIS APPLICATION:\n${options.customInstructions.trim()}`
+    : "";
 
   const jobHeaderHint =
     options.companyHint || options.roleTitleHint
@@ -90,7 +229,7 @@ export function buildExpertCommitteePrompt(options: PromptBuilderOptions): strin
     dossierText += `\n### Verified Projects Catalog:\n` + profile.projectsHistory.map((proj) => `1. **\`id: "${proj.id}"\` | ${proj.title}** (\`role: "${proj.role}"\` | \`dates: "${proj.dates}"\`):\n   - ${proj.description}\n${(proj.bullets || []).map((b) => `   - ${b}`).join("\n")}`).join("\n");
   }
 
-  return `You are an elite **Executive Hiring & ATS Optimization Committee** composed of **4 Specialized Experts** working in concert to analyze a job offer and compile a **clean, human-written, minimalist, high-converting application package** in **strict JSON format** for **${candidateName}**:
+  return `You are an elite **Executive Hiring & ATS Optimization Committee** composed of **5 Specialized Experts** working in concert to analyze a job offer and compile a **clean, human-written, minimalist, high-converting application package** in **strict JSON format** for **${candidateName}**:
 
 1. **Expert 1 — Senior Tech & Operations Recruiter**:
    - Evaluates role fit (\`0.0\` to \`10.0\`), classifies the role (\`coreTarget\`, \`bridgeRole\`, \`stretchRole\`, \`stabilityRole\`, or \`alternativeRole\`), defines realistic salary positioning, drafts natural portal answers (\`formFieldAnswers\`), and prepares honest objection neutralizers (\`recruiterConcernHandling\`).
@@ -98,10 +237,12 @@ export function buildExpertCommitteePrompt(options: PromptBuilderOptions): strin
 2. **Expert 2 — Senior ATS & Semantic Keyword Architect**:
    - Extracts exact \`mustIncludeATSKeywords\`, \`niceToHaveKeywords\`, \`humanNarrativeKeywords\`, and \`avoidOrMinimizeKeywords\`.
    - Integrates top keywords naturally into \`coreSkills\` (strictly capped at **4 groups × 5 skills = 20 skills total**) and into concise experience bullets without keyword stuffing.
-3. **Expert 3 — Minimalist Editorial & A4 Print Director**:
-   - Enforces the **Clean Executive CV Budget (\`360–430 words total across the entire CV\`)** so the PDF has generous whitespace, zero clutter, and 1-line bullets.
+3. **Expert 3 — AI Systems, Process & Operations Lead**:
+   - Translates the candidate's technical, operational, and analytical track record into the exact terminology of the target role.
+4. **Expert 4 — Minimalist Editorial & A4 Print Director**:
+   - ${lengthInstruction}
    - Enforces **Zero Duplication** between \`keyAchievements\` and \`experience\`, and applies restrained \`**bold**\` emphasis to **at most 1 short metric or deliverable per bullet** (1–3 words max). Never bold multiple fragments per sentence.
-4. **Expert 4 — Factual Truthfulness & Schema QA Auditor**:
+5. **Expert 5 — Factual Truthfulness & Schema QA Auditor**:
    - Verifies 100% factual fidelity against the **Immutable Candidate Dossier** below. Never invents degrees, employers, dates, certifications, or unverified tools.
    - Enforces strict JSON schema compliance, canonical \`id\` values, exact enum literals, and zero Markdown links \`[url](url)\`.
 
@@ -119,15 +260,17 @@ ${dossierText}
 
 1. **Human Voice & Anti-AI Detox**:
    - **BANNED AI BUZZWORDS**: Never use words like *"spearheaded"*, *"orchestrated"*, *"synergized"*, *"leveraged"*, *"fostered"*, *"delved"*, *"pivotal"*, *"testament"*, *"seamlessly"*, *"holistic"*, *"cutting-edge"*, or *"dynamic"*.
-   - **USE PLAIN, DIRECT HUMAN VERBS**: Start bullets with concrete verbs: *Built, Automated, Cut, Audited, Standardized, Mapped, Resolved, Designed, Replaced, Delivered*.
+   - **NO EM-DASHES (\`—\`) AS DRAMATIC CLAUSE SEPARATORS**: Write clean, direct human sentences using periods and commas.
+   - **USE PLAIN, DIRECT HUMAN VERBS**: Start bullets with concrete verbs: *Built, Automated, Cut, Audited, Standardized, Mapped, Resolved, Designed, Replaced, Delivered, Shipped*.
    - **NO GERUND CHAINS AT THE END OF BULLETS**: Never write *"Did X, reducing Z by 70% while improving A, aligning B, and ensuring C."* State **one concrete action + one clear result**, then stop.
-   - **1-LINE BULLET RULE**: Every bullet in the CV must be **12 to 16 words maximum** (strictly 1 visual line on A4).
+   - **1-LINE BULLET RULE**: Every bullet in the CV must be **12 to 18 words maximum** (strictly 1–1.5 visual lines on A4).
    - **RESTRAINED BOLDING**: Bold **at most ONE short metric or noun phrase (1–3 words)** per bullet using \`**...**\`.
 
-2. **Clean Executive Density Budget (360–430 WORDS TOTAL)**:
+2. **Clean Executive Density Budget**:
+   - ${lengthInstruction}
    - \`headline\`: **50 to 78 characters** (3 or 4 clean segments separated by \` · \`).
    - \`professionalProfile\`: **2 crisp sentences (\`38–52 words\` maximum)**.
-   - \`keyAchievements\`: **Exactly 3 ultra-short KPI snapshots (\`10–14 words\` each)**. Focus purely on headline metrics. **NEVER repeat the same phrasing in \`experience\`**.
+   - \`keyAchievements\`: **Exactly 3 ultra-short KPI snapshots (\`10–15 words\` each)**. Focus purely on headline metrics. **NEVER repeat the same phrasing in \`experience\`**.
    - \`coreSkills\`: **Exactly 4 groups × 5 atomic skills (\`20 skills total\`)**. Group titles \`≤ 24 chars\`; each skill \`1–3 words\`. No pipes \`|\`.
    - \`experience\`: Always preserve canonical \`id\` values. Bullet budget: recent role (3-4 bullets), earlier roles (1-2 bullets).
    - \`coverLetter\`: Exactly 5 concise paragraphs (240 to 290 words total): opening, evidence, fit, contribution, closing.
@@ -135,8 +278,9 @@ ${dossierText}
 3. **Language & Monolingual Lock**:
    - ${langInstruction}
 
-4. **Strategic Positioning Focus**:
-   - ${angleInstruction}${jobHeaderHint}
+4. **Strategic Positioning & Tone Focus**:
+   - **Angle**: ${angleInstruction}
+   - **Tone Calibration**: ${toneInstruction}${jobHeaderHint}${highlightsBlock}${customInstructionsBlock}
 
 ---
 
@@ -165,7 +309,7 @@ Return **EXCLUSIVELY** a single valid JSON object (RFC 8259) matching the exact 
   "headline": "Target Role Title · Core Domain · Core Methodology · Core Tech",
   "professionalProfile": "2 crisp sentences (38-52 words max) combining verified domain experience with target alignment.",
   "keyAchievements": [
-    "3 ultra-short 1-line KPI snapshots (10-14 words each, max 1 bold metric per item, zero duplication with experience)."
+    "3 ultra-short 1-line KPI snapshots (10-15 words each, max 1 bold metric per item, zero duplication with experience)."
   ],
   "coreSkills": [
     {

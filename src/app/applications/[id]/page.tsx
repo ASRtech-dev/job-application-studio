@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { Application, SkillGroup, ExperienceEntry, CoverLetterParagraph } from "@/lib/schemas";
 import { AtsCleanCv, ModernProfessionalCv, AtsLetter, AsrSidebarLetter, StarPrepGuide } from "@/components/templates/DocumentTemplates";
 import SignaturePad from "@/components/SignaturePad";
+import PromptGeneratorModal from "@/components/PromptGeneratorModal";
 import { normalizeImportedAIJson, sanitizeApplicationAiContent, computeSmartAutoFitSettings, analyzeApplicationReadiness } from "@/lib/aiJsonMapper";
 import { buildExpertCommitteePrompt } from "@/lib/promptBuilder";
 
@@ -232,9 +233,9 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
         origin: { y: 0.6 }
       });
       
-      alert("¡JSON importado con éxito! Revisa los cambios en la vista previa y haz clic en 'Save Draft' para guardarlos.");
+      alert("JSON imported successfully! Review the changes in the live preview and click 'Save Draft' to persist them.");
     } catch (e: any) {
-      alert("Error al procesar el archivo JSON: " + e.message);
+      alert("Error processing JSON file: " + e.message);
     }
   };
 
@@ -1832,44 +1833,44 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
             {activeInputTab === "tracking" && (
               <div className="space-y-5">
                 <div className="border-b border-[#1f2937] pb-2">
-                  <h3 className="text-sm font-bold text-white">Seguimiento de la Solicitud (Job Tracker)</h3>
+                  <h3 className="text-sm font-bold text-white">Application Pipeline Tracker</h3>
                   <p className="text-[10px] text-slate-500">
-                    Lleva el control del estado, contactos, entrevistas y notas de este proceso de selección.
+                    Track the status, recruiter contacts, interview dates, and follow-up notes for this hiring process.
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Estado del Proceso</label>
+                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Application Status</label>
                   <select
                     value={app.status}
                     onChange={(e) => setApp({ ...app, status: e.target.value as any })}
                     className="w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs cursor-pointer focus:outline-none focus:border-[#6d8ead]"
                   >
-                    <option value="draft">Borrador (Draft)</option>
-                    <option value="applied">Enviado (Applied)</option>
-                    <option value="interviewing">Entrevista (Interviewing)</option>
-                    <option value="offered">Oferta Recibida (Offered)</option>
-                    <option value="rejected">Rechazado (Rejected)</option>
-                    <option value="archived">Archivado (Archived)</option>
+                    <option value="draft">Draft</option>
+                    <option value="applied">Applied</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="offered">Offer Received</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="archived">Archived</option>
                   </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Fecha de Entrevista</label>
+                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Interview Date & Time</label>
                     <input
                       type="text"
-                      placeholder="Ej. Lunes 15 de Junio, 14:00"
+                      placeholder="e.g. Monday June 15, 14:00 CET"
                       value={app.interviewDate || ""}
                       onChange={(e) => setApp({ ...app, interviewDate: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs focus:outline-none focus:border-[#6d8ead]"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Oferta Salarial</label>
+                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Salary / Offer Range</label>
                     <input
                       type="text"
-                      placeholder="Ej. €65,000 / año"
+                      placeholder="e.g. €65,000 / year"
                       value={app.salaryOffer || ""}
                       onChange={(e) => setApp({ ...app, salaryOffer: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs focus:outline-none focus:border-[#6d8ead]"
@@ -1878,10 +1879,10 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Contacto del Reclutador</label>
+                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Recruiter / Hiring Manager Contact</label>
                   <input
                     type="text"
-                    placeholder="Nombre, email o teléfono del contacto"
+                    placeholder="Contact name, email, or LinkedIn URL"
                     value={app.recruiterContact || ""}
                     onChange={(e) => setApp({ ...app, recruiterContact: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs focus:outline-none focus:border-[#6d8ead]"
@@ -1889,10 +1890,10 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Notas de Seguimiento y Comentarios</label>
+                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Follow-up Notes & Call Logs</label>
                   <textarea
                     rows={8}
-                    placeholder="Escribe aquí notas sobre las llamadas, siguientes pasos, preguntas a preparar..."
+                    placeholder="Write notes about recruiter calls, next steps, technical questions to prepare..."
                     value={app.notes || ""}
                     onChange={(e) => setApp({ ...app, notes: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs focus:outline-none focus:border-[#6d8ead] leading-relaxed resize-y"
@@ -1901,26 +1902,26 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
 
                 {/* Recruiter Email templates */}
                 <div className="border-t border-[#1f2937] pt-4 mt-2">
-                  <span className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-2">Plantillas de Email para Reclutadores</span>
+                  <span className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-2">Recruiter Outreach & Follow-Up Email Templates</span>
                   <div className="space-y-2">
                     {[
-                      {
-                        title: "📬 Seguimiento tras Postulación",
-                        lang: "Spanish",
-                        subject: `Candidatura - ${app.roleTitle} - ${app.cvContent?.header?.fullName || "Candidate Name"}`,
-                        body: `Hola ${app.recruiterContact ? app.recruiterContact.split(" ")[0] : "Equipo de Selección"},\n\nEspero que se encuentre muy bien. Le escribo para hacer un breve seguimiento sobre mi candidatura al puesto de ${app.roleTitle} en ${app.company}.\n\nMe entusiasma mucho esta oportunidad debido a mi experiencia en automatización de procesos y optimización de flujos de trabajo utilizando Python y n8n, habiendo liderado proyectos con impacto medible en 14 mercados europeos. Sigo a su entera disposición en caso de que necesiten más detalles de mi currículum o coordinar una llamada de contacto inicial.\n\nAtentamente,\n${app.cvContent?.header?.fullName || "Candidate Name"}`
-                      },
-                      {
-                        title: "📅 Confirmación / Agradecimiento de Entrevista",
-                        lang: "Spanish",
-                        subject: `Agradecimiento por entrevista - ${app.roleTitle} - ${app.cvContent?.header?.fullName || "Candidate Name"}`,
-                        body: `Hola ${app.recruiterContact ? app.recruiterContact.split(" ")[0] : "Hiring Manager"},\n\nLe agradezco sinceramente el tiempo dedicado hoy en nuestra entrevista para conversar sobre el puesto de ${app.roleTitle} en ${app.company}.\n\nFue un placer conocer más detalles sobre los objetivos y prioridades del equipo. Me confirma que mis capacidades para estructurar modelos operativos e implementar automatizaciones con n8n/Make se alinean con sus retos actuales de negocio. Quedo atento a los siguientes pasos del proceso.\n\nAtentamente,\n${app.cvContent?.header?.fullName || "Candidate Name"}`
-                      },
                       {
                         title: "📬 Post-Application Follow-up (English)",
                         lang: "English",
                         subject: `Application Follow-up - ${app.roleTitle} - ${app.cvContent?.header?.fullName || "Candidate Name"}`,
-                        body: `Dear ${app.recruiterContact ? app.recruiterContact.split(" ")[0] : "Hiring Team"},\n\nI hope this email finds you well. I am writing to briefly follow up on my application for the ${app.roleTitle} role at ${app.company}.\n\nHaving reviewed the requirements, I am very excited about the possibility of contributing to your team with my background in process automation and Lean Six Sigma steering across 14 European markets. Please let me know if you need any additional information from my side or if we could schedule a brief introductory call.\n\nBest regards,\n${app.cvContent?.header?.fullName || "Candidate Name"}`
+                        body: `Dear ${app.recruiterContact ? app.recruiterContact.split(" ")[0] : "Hiring Team"},\n\nI hope this email finds you well. I am writing to briefly follow up on my application for the ${app.roleTitle} role at ${app.company}.\n\nHaving reviewed the requirements, I am very excited about the possibility of contributing to your team with my background in process automation and operational steering. Please let me know if you need any additional information from my side or if we could schedule a brief introductory call.\n\nBest regards,\n${app.cvContent?.header?.fullName || "Candidate Name"}`
+                      },
+                      {
+                        title: "📅 Post-Interview Thank You Note (English)",
+                        lang: "English",
+                        subject: `Thank you — Interview for ${app.roleTitle} - ${app.cvContent?.header?.fullName || "Candidate Name"}`,
+                        body: `Dear ${app.recruiterContact ? app.recruiterContact.split(" ")[0] : "Hiring Manager"},\n\nThank you very much for taking the time today to discuss the ${app.roleTitle} position at ${app.company}.\n\nI thoroughly enjoyed learning more about the team's upcoming priorities and operational challenges. Our conversation further reinforced how well my experience building automated workflows and governing business processes aligns with your goals. I look forward to hearing about the next steps in the process.\n\nBest regards,\n${app.cvContent?.header?.fullName || "Candidate Name"}`
+                      },
+                      {
+                        title: "📬 Follow-up nach Bewerbung (German)",
+                        lang: "German",
+                        subject: `Rückfrage zur Bewerbung als ${app.roleTitle} - ${app.cvContent?.header?.fullName || "Candidate Name"}`,
+                        body: `Sehr geehrte(r) ${app.recruiterContact ? app.recruiterContact : "Damen und Herren"},\n\nich hoffe, Sie haben eine erfolgreiche Woche. Hiermit möchte ich mich kurz nach dem aktuellen Stand meiner Bewerbung als ${app.roleTitle} bei ${app.company} erkundigen.\n\nDie Position spricht mich aufgrund meiner Erfahrung in der Prozessautomatisierung sowie der operativen Prozesssteuerung besonders an. Für Rückfragen oder ein erstes Kennenlerngespräch stehe ich Ihnen jederzeit gerne zur Verfügung.\n\nMit freundlichen Grüßen\n${app.cvContent?.header?.fullName || "Candidate Name"}`
                       }
                     ].map((tpl, i) => (
                       <div key={i} className="bg-[#0a0f1d] border border-[#1f2937]/50 rounded-xl p-3 space-y-2">
@@ -1931,14 +1932,14 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                             onClick={() => {
                               const fullText = `Subject: ${tpl.subject}\n\n${tpl.body}`;
                               navigator.clipboard.writeText(fullText);
-                              alert("¡Plantilla de email copiada al portapapeles!");
+                              alert("Email template copied to clipboard!");
                             }}
                             className="text-[9px] text-[#6d8ead] hover:underline"
                           >
-                            Copiar
+                            Copy
                           </button>
                         </div>
-                        <p className="text-[9px] text-slate-400 truncate font-mono">Asunto: {tpl.subject}</p>
+                        <p className="text-[9px] text-slate-400 truncate font-mono">Subject: {tpl.subject}</p>
                       </div>
                     ))}
                   </div>
@@ -1969,17 +1970,17 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
               return (
                 <div className="space-y-5">
                   <div className="border-b border-[#1f2937] pb-2">
-                    <h3 className="text-sm font-bold text-white">Escáner ATS de Palabras Clave</h3>
+                    <h3 className="text-sm font-bold text-white">ATS Keyword Compatibility Scanner</h3>
                     <p className="text-[10px] text-slate-500">
-                      Pega la descripción de la oferta y analizaremos si tu CV contiene los términos clave necesarios para superar los filtros automatizados.
+                      Paste the job description below to analyze whether your CV contains the essential keywords required to pass automated ATS filters.
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Descripción del Puesto</label>
+                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Job Description</label>
                     <textarea
                       rows={6}
-                      placeholder="Pega aquí la descripción completa de la oferta de trabajo para iniciar el análisis de compatibilidad..."
+                      placeholder="Paste the full job description here to run an instant ATS keyword compatibility check..."
                       value={app.jobDescription || ""}
                       onChange={(e) => setApp({ ...app, jobDescription: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs focus:outline-none focus:border-[#6d8ead] leading-relaxed resize-y"
@@ -1991,8 +1992,8 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                       {/* Match Score Gauge */}
                       <div className="bg-[#0e162d]/50 p-4 rounded-xl border border-[#1f2937]/50 flex items-center justify-between">
                         <div>
-                          <span className="text-xs font-bold text-white block">Puntuación de Coincidencia ATS</span>
-                          <span className="text-[9px] text-[#6b7280]">Basado en palabras clave detectadas en la descripción</span>
+                          <span className="text-xs font-bold text-white block">ATS Keyword Match Score</span>
+                          <span className="text-[9px] text-[#6b7280]">Based on target keywords detected in the job description</span>
                         </div>
                         <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-base border-2 ${
                           score >= 70 ? "border-emerald-500 text-emerald-400 bg-emerald-500/10" :
@@ -2006,7 +2007,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                       {/* Matched Keywords */}
                       <div>
                         <span className="text-[10px] uppercase font-bold text-emerald-400 block mb-1.5">
-                          ✓ Palabras Clave Detectadas ({matched.length})
+                          ✓ Matched Keywords ({matched.length})
                         </span>
                         {matched.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
@@ -2017,14 +2018,14 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                             ))}
                           </div>
                         ) : (
-                          <p className="text-[10px] text-slate-500 italic">Ninguna coincidencia detectada aún.</p>
+                          <p className="text-[10px] text-slate-500 italic">No keyword matches detected yet.</p>
                         )}
                       </div>
 
                       {/* Missing Keywords */}
                       <div>
                         <span className="text-[10px] uppercase font-bold text-rose-400 block mb-1.5">
-                          ⚠️ Palabras Clave Ausentes ({missing.length})
+                          ⚠️ Missing Keywords ({missing.length})
                         </span>
                         {missing.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
@@ -2035,13 +2036,13 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                             ))}
                           </div>
                         ) : (
-                          <p className="text-[10px] text-emerald-400 italic font-semibold">¡Felicidades! Tienes cubiertas todas las palabras clave principales en tu CV actual.</p>
+                          <p className="text-[10px] text-emerald-400 italic font-semibold">Great job! All primary target keywords are covered in your current CV.</p>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="bg-[#0e162d]/20 border border-dashed border-[#1f2937] p-5 rounded-xl text-center text-xs text-[#6b7280]">
-                      Copia la descripción completa del puesto en la caja superior para realizar el análisis ATS instantáneo.
+                      Paste the full job description in the box above to run an instant ATS keyword scan.
                     </div>
                   )}
                 </div>
@@ -2787,7 +2788,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
 
                   <div className="space-y-3 pt-3 border-t border-[#1f2937]/50">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-white">Ajustes de Densidad y Paginación A4</h4>
+                      <h4 className="text-xs font-bold text-white">A4 Density & Pagination Controls</h4>
                       <button
                         type="button"
                         onClick={() => {
@@ -2822,7 +2823,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         }
                         className="px-2 py-1.5 rounded-lg border border-[#1f2937] hover:border-[#6d8ead]/50 bg-[#0a0f1d] text-[10px] font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
                       >
-                        Compacto (9.5pt)
+                        Compact (9.5pt)
                       </button>
                       <button
                         type="button"
@@ -2839,7 +2840,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         }
                         className="px-2 py-1.5 rounded-lg border border-[#6d8ead]/40 bg-[#6d8ead]/15 text-[10px] font-semibold text-white hover:bg-[#6d8ead]/25 transition-all cursor-pointer"
                       >
-                        Ejecutivo 2P (10pt)
+                        Executive 2P (10pt)
                       </button>
                       <button
                         type="button"
@@ -2856,7 +2857,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         }
                         className="px-2 py-1.5 rounded-lg border border-[#1f2937] hover:border-[#6d8ead]/50 bg-[#0a0f1d] text-[10px] font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
                       >
-                        Amplio (10.5pt)
+                        Spacious (10.5pt)
                       </button>
                     </div>
 
@@ -2884,7 +2885,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                     
                     <div>
                       <div className="flex justify-between text-[10px] font-semibold text-[#6d8ead] mb-1">
-                        <span>Tamaño de Letra (Font Size)</span>
+                        <span>Font Size</span>
                         <span className="text-white">{app.templateSettings.fontSize || 10}pt</span>
                       </div>
                       <input
@@ -2900,7 +2901,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
 
                     <div>
                       <div className="flex justify-between text-[10px] font-semibold text-[#6d8ead] mb-1">
-                        <span>Interlineado (Line Spacing)</span>
+                        <span>Line Spacing</span>
                         <span className="text-white">{app.templateSettings.lineSpacing || 1.3}</span>
                       </div>
                       <input
@@ -2916,7 +2917,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
 
                     <div>
                       <div className="flex justify-between text-[10px] font-semibold text-[#6d8ead] mb-1">
-                        <span>Margen de Sección (Section Spacing)</span>
+                        <span>Section Spacing</span>
                         <span className="text-white">{app.templateSettings.sectionSpacing || 12}px</span>
                       </div>
                       <input
@@ -2936,7 +2937,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                 <div className="bg-[#0e162d]/50 p-4 rounded-xl border border-[#1f2937]/50 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                      <ImageIcon className="w-4 h-4 text-[#6d8ead]" /> Profile Photo
+                      <ImageIcon className="w-4 h-4 text-[#6d8ead]" /> Profile Photo (DACH Executive Portrait)
                     </h3>
                     <input
                       type="checkbox"
@@ -2950,15 +2951,15 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                   {app.assetSettings.photo.filePath ? (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Cropping shape</label>
+                        <label className="text-[10px] uppercase font-bold text-[#6d8ead] block mb-1">Portrait Frame Style</label>
                         <select
                           value={app.assetSettings.photo.cropStyle}
                           onChange={(e) => updateAssetSettings("photo", "cropStyle", e.target.value)}
                           className="w-full px-2.5 py-1.5 rounded bg-[#0a0f1d] border border-[#1f2937] text-white text-xs cursor-pointer"
                         >
-                          <option value="circle">Circle</option>
-                          <option value="rounded-square">Rounded Square</option>
-                          <option value="portrait-rectangle">Portrait Rectangle</option>
+                          <option value="portrait-rectangle">Executive Portrait 3:4 (Recommended)</option>
+                          <option value="rounded-square">Modern Squircle (1:1)</option>
+                          <option value="circle">Studio Circle (1:1)</option>
                         </select>
                       </div>
 
@@ -2969,8 +2970,8 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                           onChange={(e) => updateAssetSettings("photo", "placement", e.target.value)}
                           className="w-full px-2.5 py-1.5 rounded bg-[#0a0f1d] border border-[#1f2937] text-white text-xs cursor-pointer"
                         >
+                          <option value="header-right">Right Column Header (Recommended)</option>
                           <option value="sidebar">Sidebar / Top Right</option>
-                          <option value="header-right">Right Column Header</option>
                         </select>
                       </div>
                     </div>
@@ -3075,9 +3076,9 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
                         : "bg-amber-500/10 text-amber-300 border-amber-500/30"
                     }`}
-                    title="Presupuesto ideal Comité de Berlín: 350–450 palabras en CV"
+                    title="Target word budget (Berlin Editorial Standard): 350–450 words on CV"
                   >
-                    CV: {readiness.totalCvWords}w {isWordCountIdeal ? "· Ideal" : readiness.totalCvWords < 330 ? "· Corto" : "· Denso"}
+                    CV: {readiness.totalCvWords}w {isWordCountIdeal ? "· Ideal" : readiness.totalCvWords < 330 ? "· Short" : "· Dense"}
                   </span>
 
                   {/* Bullets Length Badge */}
@@ -3087,9 +3088,9 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         ? "bg-slate-800/80 text-slate-300 border-slate-700"
                         : "bg-amber-500/10 text-amber-300 border-amber-500/30"
                     }`}
-                    title="Bullets recomendados: máx. 18–20 palabras para lectura en 6 segundos"
+                    title="Recommended bullet length: max 18–20 words for 6-second recruiter scan"
                   >
-                    {readiness.totalBullets} bullets {readiness.longBulletsCount > 0 ? `(${readiness.longBulletsCount} >20w)` : "· Concisos"}
+                    {readiness.totalBullets} bullets {readiness.longBulletsCount > 0 ? `(${readiness.longBulletsCount} >20w)` : "· Concise"}
                   </span>
 
                   {/* Anti-AI & Duplication Status / 1-Click Clean */}
@@ -3101,13 +3102,13 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         setApp(cleaned);
                       }}
                       className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
-                      title={`Clichés IA detectados: ${readiness.aiBuzzwordsFound.join(", ") || "ninguno"} | Logros duplicados: ${readiness.duplicateAchievementsCount}`}
+                      title={`Detected AI clichés: ${readiness.aiBuzzwordsFound.join(", ") || "none"} | Duplicate achievements: ${readiness.duplicateAchievementsCount}`}
                     >
-                      🧹 Limpiar IA ({aiIssueCount})
+                      🧹 Clean AI ({aiIssueCount})
                     </button>
                   ) : (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                      ✓ 100% Humano
+                      ✓ 100% Human
                     </span>
                   )}
 
@@ -3122,7 +3123,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         ? "bg-[#10233f] text-white border-[#6d8ead]/40"
                         : "bg-[#0a0f1d] text-slate-500 border-[#1f2937]"
                     }`}
-                    title="Mostrar/ocultar sección Key Achievements (formato Lebenslauf DACH puro)"
+                    title="Show/hide Key Achievements section (pure DACH Lebenslauf toggle)"
                   >
                     Achievements: {showAch ? "ON" : "OFF"}
                   </button>
@@ -3135,7 +3136,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                         ? "bg-[#10233f] text-white border-[#6d8ead]/40"
                         : "bg-[#0a0f1d] text-slate-500 border-[#1f2937]"
                     }`}
-                    title="Mostrar/ocultar sección Selected Projects"
+                    title="Show/hide Selected Projects section"
                   >
                     Projects: {showProj ? "ON" : "OFF"}
                   </button>
@@ -3154,7 +3155,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                       });
                     }}
                     className="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-[#6d8ead]/15 hover:bg-[#6d8ead]/30 text-white border border-[#6d8ead]/40 transition-all cursor-pointer"
-                    title="Ajustar automáticamente tamaño de fuente, interlineado y márgenes según cantidad de palabras"
+                    title="Automatically adjust font size, line spacing, and section spacing based on word count"
                   >
                     ✨ Auto-Fit ({app.templateSettings.fontSize || 10}pt)
                   </button>
@@ -3219,57 +3220,13 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
         />
 
         {/* Prompt Architect Modal */}
-        {showPromptModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl rounded-2xl border border-[#1f2937] bg-[#0e162d] p-6 shadow-2xl relative flex flex-col max-h-[90vh]">
-              <div className="absolute -left-16 -top-16 w-32 h-32 bg-[#6d8ead]/15 rounded-full blur-2xl"></div>
-              
-              <div className="flex justify-between items-start mb-2 z-10">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-amber-400" />
-                    Gemini Prompt Architect
-                  </h3>
-                  <p className="text-xs text-[#6b7280]">
-                    Copia este prompt optimizado y pégalo en la versión web de Gemini para obtener adaptaciones a medida.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setShowPromptModal(false)}
-                  className="text-slate-400 hover:text-white font-bold text-lg"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto my-4 bg-[#0a0f1d] border border-[#1f2937] rounded-xl p-4">
-                <pre className="text-[11px] text-slate-300 font-mono whitespace-pre-wrap select-all leading-relaxed">
-                  {generateGeminiPrompt()}
-                </pre>
-              </div>
-
-              <div className="flex justify-end gap-3 z-10 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(generateGeminiPrompt());
-                    alert("¡Prompt copiado al portapapeles!");
-                  }}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/30 text-amber-300 font-bold text-xs hover:from-amber-500/30 hover:to-amber-600/30 transition-all active:scale-95"
-                >
-                  📋 Copiar Prompt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPromptModal(false)}
-                  className="px-4 py-2 rounded-xl bg-[#10233f] hover:bg-[#152e52] text-[#6d8ead] border border-[#6d8ead]/10 font-bold text-xs transition-all"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <PromptGeneratorModal
+          isOpen={showPromptModal}
+          onClose={() => setShowPromptModal(false)}
+          initialCompany={app.company}
+          initialRoleTitle={app.roleTitle}
+          initialLanguage={app.language as "English" | "German" | "Spanish"}
+        />
 
         {/* Import JSON Modal */}
         {showImportModal && (
@@ -3284,22 +3241,35 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                     Import Tailored JSON Draft
                   </h3>
                   <p className="text-xs text-[#6b7280]">
-                    Pega el JSON generado por el chatbot o sube el archivo .json para rellenar de inmediato todo el borrador.
+                    Paste the JSON generated by your LLM or upload a .json file to immediately populate the entire draft.
                   </p>
                 </div>
-                <button 
-                  onClick={() => setShowImportModal(false)}
-                  className="text-slate-400 hover:text-white font-bold text-lg"
-                >
-                  ×
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowImportModal(false);
+                      setShowPromptModal(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-[#10233f] hover:bg-[#163056] text-[#6d8ead] hover:text-white border border-[#6d8ead]/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Customize Prompt
+                  </button>
+                  <button 
+                    onClick={() => setShowImportModal(false)}
+                    className="text-slate-400 hover:text-white font-bold text-lg px-1"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 flex flex-col my-4 gap-3">
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex flex-col items-center justify-center border border-dashed border-[#1f2937] hover:border-[#6d8ead]/40 rounded-xl p-6 cursor-pointer bg-[#0a0f1d]/50 transition-colors">
                     <Download className="w-6 h-6 text-[#6d8ead] mb-2" />
-                    <span className="text-xs font-semibold text-white">Subir archivo .json</span>
+                    <span className="text-xs font-semibold text-white">Upload .json file</span>
                     <input
                       type="file"
                       accept=".json"
@@ -3321,10 +3291,10 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div className="flex-1 flex flex-col">
-                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] mb-1 block">O pega el contenido JSON directamente aquí:</label>
+                  <label className="text-[10px] uppercase font-bold text-[#6d8ead] mb-1 block">Or paste JSON content directly here:</label>
                   <textarea
                     rows={6}
-                    placeholder='{ "company": "Zalando", ... }'
+                    placeholder='{ "company": "Acme Corp", ... }'
                     value={editorJsonText}
                     onChange={(e) => setEditorJsonText(e.target.value)}
                     className="w-full flex-1 min-h-[120px] p-3 rounded-lg bg-[#0a0f1d] border border-[#1f2937] text-white text-xs font-mono focus:border-emerald-500 outline-none leading-normal resize-y"
@@ -3373,12 +3343,12 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                     if (editorJsonText) {
                       handleImportJson(editorJsonText);
                     } else {
-                      alert("Por favor, pega el JSON o sube un archivo.");
+                      alert("Please paste the JSON content or upload a file.");
                     }
                   }}
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs hover:from-emerald-500/30 hover:to-emerald-600/30 transition-all active:scale-95 flex items-center justify-center min-w-[100px]"
                 >
-                  📥 Importar Datos
+                  📥 Import Data
                 </button>
                 <button
                   type="button"
@@ -3388,7 +3358,7 @@ export default function ApplicationEditor({ params }: { params: Promise<{ id: st
                   }}
                   className="px-4 py-2 rounded-xl bg-[#10233f] hover:bg-[#152e52] text-[#6d8ead] border border-[#6d8ead]/10 font-bold text-xs transition-all"
                 >
-                  Cancelar
+                  Cancel
                 </button>
               </div>
             </div>

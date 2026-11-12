@@ -164,8 +164,8 @@ export async function POST(req: Request) {
         },
         photo: {
           enabled: false,
-          cropStyle: "circle",
-          placement: "sidebar",
+          cropStyle: "portrait-rectangle",
+          placement: "header-right",
         }
       },
       notes: pastedData?.notes || "",

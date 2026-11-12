@@ -149,7 +149,7 @@ export default function Dashboard() {
 
     if (importMode === "json") {
       if (!jsonText.trim()) {
-        alert("Por favor, introduce el contenido JSON.");
+        alert("Please paste or upload the JSON content.");
         return;
       }
       try {
@@ -157,7 +157,7 @@ export default function Dashboard() {
         targetCompany = parsedJson.company || "Generic";
         targetRoleTitle = parsedJson.roleTitle || "Role";
       } catch (err: any) {
-        alert("El contenido JSON no es válido: " + err.message);
+        alert("Invalid JSON content: " + err.message);
         return;
       }
     } else {
@@ -337,12 +337,12 @@ export default function Dashboard() {
 
   const statsConfig = [
     { key: "all", label: "Total", count: totalCount, color: "border-[#6d8ead] text-white", bg: "bg-[#6d8ead]/25" },
-    { key: "draft", label: "Borradores", count: draftCount, color: "border-slate-400 text-slate-400", bg: "bg-slate-400/10" },
-    { key: "applied", label: "Enviados", count: appliedCount, color: "border-blue-500 text-blue-400", bg: "bg-blue-500/10" },
-    { key: "interviewing", label: "Entrevistas", count: interviewingCount, color: "border-amber-500 text-amber-400", bg: "bg-amber-500/10" },
-    { key: "offered", label: "Ofertas", count: offeredCount, color: "border-emerald-500 text-emerald-400", bg: "bg-emerald-500/10" },
-    { key: "rejected", label: "Rechazados", count: rejectedCount, color: "border-rose-500 text-rose-400", bg: "bg-rose-500/10" },
-    { key: "archived", label: "Archivados", count: archivedCount, color: "border-gray-700 text-gray-500", bg: "bg-gray-700/10" },
+    { key: "draft", label: "Drafts", count: draftCount, color: "border-slate-400 text-slate-400", bg: "bg-slate-400/10" },
+    { key: "applied", label: "Applied", count: appliedCount, color: "border-blue-500 text-blue-400", bg: "bg-blue-500/10" },
+    { key: "interviewing", label: "Interviews", count: interviewingCount, color: "border-amber-500 text-amber-400", bg: "bg-amber-500/10" },
+    { key: "offered", label: "Offers", count: offeredCount, color: "border-emerald-500 text-emerald-400", bg: "bg-emerald-500/10" },
+    { key: "rejected", label: "Rejected", count: rejectedCount, color: "border-rose-500 text-rose-400", bg: "bg-rose-500/10" },
+    { key: "archived", label: "Archived", count: archivedCount, color: "border-gray-700 text-gray-500", bg: "bg-gray-700/10" },
   ];
 
   const filteredApps = applications.filter(app => {
@@ -356,43 +356,43 @@ export default function Dashboard() {
         return {
           border: "border-l-slate-500 hover:border-l-slate-400",
           bg: "bg-slate-500/10 text-slate-300 border-slate-500/30",
-          label: "Borrador",
+          label: "Draft",
         };
       case "applied":
         return {
           border: "border-l-blue-500 hover:border-l-blue-400",
           bg: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-          label: "Enviado",
+          label: "Applied",
         };
       case "interviewing":
         return {
           border: "border-l-amber-500 hover:border-l-amber-400",
           bg: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-          label: "Entrevista",
+          label: "Interview",
         };
       case "offered":
         return {
           border: "border-l-emerald-500 hover:border-l-emerald-400",
           bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-          label: "Ofrecido",
+          label: "Offered",
         };
       case "rejected":
         return {
           border: "border-l-rose-500 hover:border-l-rose-400",
           bg: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-          label: "Rechazado",
+          label: "Rejected",
         };
       case "archived":
         return {
           border: "border-l-gray-700 hover:border-l-gray-600",
           bg: "bg-gray-700/15 text-gray-400 border-gray-700/30",
-          label: "Archivado",
+          label: "Archived",
         };
       default:
         return {
           border: "border-l-slate-500 hover:border-l-slate-400",
           bg: "bg-slate-500/10 text-slate-300 border-slate-500/30",
-          label: status || "Borrador",
+          label: status || "Draft",
         };
     }
   };
@@ -412,10 +412,17 @@ export default function Dashboard() {
       <header className="border-b border-[#1f2937]/60 bg-[#0c1328]/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#10233f] to-[#6d8ead] flex items-center justify-center font-bold text-lg border border-[#6d8ead]/30 shadow-lg shadow-[#6d8ead]/10">
-            ASR
+            {masterCv?.fullName
+              ? masterCv.fullName
+                  .split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 3)
+                  .map((w) => w[0]?.toUpperCase() || "")
+                  .join("")
+              : "JAS"}
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">Application Builder</h1>
+            <h1 className="text-xl font-bold tracking-tight text-white">Job Application Studio</h1>
             <p className="text-xs text-[#6d8ead]">Premium Local Document Compiler</p>
           </div>
         </div>
@@ -424,7 +431,7 @@ export default function Dashboard() {
             onClick={() => setShowPromptModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#10233f]/50 hover:bg-[#10233f] text-[#6d8ead] hover:text-white font-medium transition-all duration-300 border border-[#6d8ead]/30 active:scale-95"
           >
-            <Sparkles className="w-4 h-4" /> Prompt IA
+            <Sparkles className="w-4 h-4" /> AI Prompt Studio
           </button>
           <button
             onClick={() => setShowNewModal(true)}
@@ -518,7 +525,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-white block">Profile Photo</span>
-                  <span className="text-[10px] text-[#6b7280]">Used in Modern CV templates</span>
+                  <span className="text-[10px] text-[#6b7280]">Used in ATS & Modern CV templates (3:4 Executive Portrait)</span>
                 </div>
                 <input
                   type="checkbox"
@@ -532,9 +539,9 @@ export default function Dashboard() {
               {uploadedPhotoUrl ? (
                 <div className="flex items-center gap-3 bg-[#0a0f1d] p-2.5 rounded-xl border border-[#1f2937]/60">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={uploadedPhotoUrl} alt="Preview" className="w-10 h-10 rounded-full object-cover border border-[#6d8ead]/30" />
+                  <img src={uploadedPhotoUrl} alt="Preview" className="w-11 h-14 rounded-lg object-cover object-top border border-[#6d8ead]/40 shadow-sm" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] text-[#6d8ead] truncate">Uploaded Photo</p>
+                    <p className="text-[11px] text-[#6d8ead] font-semibold truncate">Executive Portrait (3:4)</p>
                     <p className="text-[9px] text-[#6b7280]">{photoEnabled ? "Enabled by default" : "Disabled by default"}</p>
                   </div>
                   <label className="cursor-pointer text-[10px] font-semibold text-[#6d8ead] hover:underline">
@@ -695,32 +702,32 @@ export default function Dashboard() {
                       <span className="text-[10px] flex items-center gap-1 text-slate-400 font-semibold">
                         {app.status === "draft" && (
                           <span className="text-emerald-400 flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" /> Listo para compilar
+                            <CheckCircle className="w-3.5 h-3.5" /> Ready to compile
                           </span>
                         )}
                         {app.status === "applied" && (
                           <span className="text-blue-400 flex items-center gap-1">
-                            📬 Enviado
+                            📬 Submitted
                           </span>
                         )}
                         {app.status === "interviewing" && (
                           <span className="text-amber-400 flex items-center gap-1 font-bold">
-                            🔥 Proceso activo
+                            🔥 Active process
                           </span>
                         )}
                         {app.status === "offered" && (
                           <span className="text-emerald-400 flex items-center gap-1 font-black">
-                            🎉 ¡Oferta recibida!
+                            🎉 Offer received!
                           </span>
                         )}
                         {app.status === "rejected" && (
                           <span className="text-rose-400 flex items-center gap-1">
-                            ❌ Rechazado
+                            ❌ Rejected
                           </span>
                         )}
                         {app.status === "archived" && (
                           <span className="text-slate-500 flex items-center gap-1">
-                            📦 Archivado
+                            📦 Archived
                           </span>
                         )}
                       </span>
@@ -767,15 +774,15 @@ export default function Dashboard() {
                 </>
               ) : (
                 <>
-                  <h4 className="text-white font-bold mb-1">No hay solicitudes en esta sección</h4>
+                  <h4 className="text-white font-bold mb-1">No applications in this category</h4>
                   <p className="text-xs text-[#6b7280] max-w-sm mx-auto mb-6">
-                    No se encontraron solicitudes con el filtro seleccionado.
+                    No applications matched the selected status filter.
                   </p>
                   <button
                     onClick={() => setStatusFilter("all")}
                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#10233f] to-[#1d3d6b] text-white font-medium shadow-md hover:from-[#152d50] hover:to-[#244e88] transition-all"
                   >
-                    Mostrar todas las solicitudes
+                    Show all applications
                   </button>
                 </>
               )}
@@ -867,12 +874,12 @@ export default function Dashboard() {
                     onClick={() => setShowPromptModal(true)}
                     className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-[#6d8ead]/30 bg-[#10233f]/40 hover:bg-[#10233f] text-[#6d8ead] hover:text-white text-xs font-semibold transition-all"
                   >
-                    <Sparkles className="w-3.5 h-3.5" /> ¿Aún no tienes el JSON? Copiar prompt para el chatbot
+                    <Sparkles className="w-3.5 h-3.5" /> Need the JSON? Open AI Prompt Studio
                   </button>
                   <div>
                     <label className="flex flex-col items-center justify-center border border-dashed border-[#1f2937] hover:border-[#6d8ead]/40 rounded-xl p-4 cursor-pointer bg-[#0a0f1d]/50 transition-colors">
                       <Download className="w-5 h-5 text-[#6d8ead] mb-1" />
-                      <span className="text-[10px] font-semibold text-white">Subir archivo .json</span>
+                      <span className="text-[10px] font-semibold text-white">Upload .json file</span>
                       <input
                         type="file"
                         accept=".json"
@@ -894,10 +901,10 @@ export default function Dashboard() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] mb-1 block">O pega el JSON directamente aquí:</label>
+                    <label className="text-[10px] uppercase font-bold text-[#6d8ead] mb-1 block">Or paste JSON directly here:</label>
                     <textarea
                       rows={6}
-                      placeholder='{ "company": "Zalando", "roleTitle": "Business Steering Analyst", ... }'
+                      placeholder='{ "company": "Acme Corp", "roleTitle": "Business Steering Analyst", ... }'
                       value={jsonText}
                       onChange={(e) => setJsonText(e.target.value)}
                       className="w-full p-2.5 rounded-lg bg-[#0a0f1d] border border-[#1f2937] text-white text-xs font-mono focus:border-[#6d8ead] outline-none leading-normal resize-y"

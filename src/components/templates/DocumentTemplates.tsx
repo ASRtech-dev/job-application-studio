@@ -320,7 +320,7 @@ const PageBreakGuides: React.FC<PageBreakGuidesProps> = ({
                 letterSpacing: "0.5px",
               }}
             >
-              FIN PÁGINA {page} · INICIO PÁGINA {page + 1}
+              END OF PAGE {page} · START OF PAGE {page + 1}
             </span>
             <span
               style={{
@@ -336,7 +336,7 @@ const PageBreakGuides: React.FC<PageBreakGuidesProps> = ({
                 fontFamily: "Inter, Arial, sans-serif",
               }}
             >
-              Corte Real PDF A4 ({breakTopMm}mm)
+              A4 PDF Page Break ({breakTopMm}mm)
             </span>
           </div>
         );
@@ -346,15 +346,76 @@ const PageBreakGuides: React.FC<PageBreakGuidesProps> = ({
 };
 
 // -------------------------------------------------------------
+// SHARED EXECUTIVE PORTRAIT FRAMING HELPER (DACH 3:4 BEWERBUNGSFOTO)
+// -------------------------------------------------------------
+function getExecutivePortraitStyle(
+  cropStyle: string | undefined,
+  accentColor: string,
+  variant: "ats" | "modern" = "modern"
+): { container: React.CSSProperties; image: React.CSSProperties } {
+  const mode = cropStyle || "portrait-rectangle";
+  const isCircle = mode === "circle";
+  const isSquircle = mode === "rounded-square";
+
+  const width = isCircle
+    ? "84px"
+    : isSquircle
+    ? "84px"
+    : variant === "ats"
+    ? "78px"
+    : "82px";
+
+  const height = isCircle
+    ? "84px"
+    : isSquircle
+    ? "94px"
+    : variant === "ats"
+    ? "100px"
+    : "106px";
+
+  const outerRadius = isCircle ? "50%" : isSquircle ? "12px" : "8px";
+  const innerRadius = isCircle ? "50%" : isSquircle ? "9px" : "5.5px";
+
+  return {
+    container: {
+      display: "inline-block",
+      padding: "2.5px",
+      backgroundColor: "#ffffff",
+      border: "1px solid #cbd5e1",
+      borderTop: isCircle ? "1px solid #cbd5e1" : `2.5px solid ${accentColor}`,
+      borderRadius: outerRadius,
+      boxShadow:
+        "0 6px 16px -3px rgba(16, 35, 63, 0.14), 0 2px 5px -1px rgba(15, 23, 42, 0.06)",
+      flexShrink: 0,
+      marginLeft: "18px",
+    },
+    image: {
+      width,
+      height,
+      borderRadius: innerRadius,
+      objectFit: "cover" as const,
+      objectPosition: "center 16%",
+      display: "block",
+    },
+  };
+}
+
+// -------------------------------------------------------------
 // 1. ATS CLEAN CV TEMPLATE (EXECUTIVE SINGLE-COLUMN + 2-COL SKILLS)
 // -------------------------------------------------------------
-export const AtsCleanCv: React.FC<TemplateProps> = ({ data }) => {
+export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
   const cv = data.cvContent;
   const lang = getEffectiveLanguage(data);
   const labels = SECTION_LABELS[lang];
 
   const accentColor = data.templateSettings?.accentColor || "#10233f";
   const fontFamily = data.templateSettings?.fontFamily || "Inter";
+  const showPhoto = data.assetSettings?.photo?.enabled;
+  const photoUrl = photoBase64 || data.assetSettings?.photo?.filePath;
+  const cropStyle = data.assetSettings?.photo?.cropStyle || "portrait-rectangle";
+  const hasPhoto = Boolean(showPhoto && photoUrl);
+  const portraitStyle = getExecutivePortraitStyle(cropStyle, accentColor, "ats");
+
   const fontSize = data.templateSettings?.fontSize || 10;
   const lineSpacing = data.templateSettings?.lineSpacing || 1.32;
   const sectionSpacing = data.templateSettings?.sectionSpacing || 12;
@@ -399,57 +460,79 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data }) => {
       }}
     >
       {/* Header */}
-      <div className="break-avoid" style={{ textAlign: "center", marginBottom: "10px" }}>
-        <h1
-          style={{
-            fontSize: "20.5pt",
-            fontWeight: 700,
-            margin: "0 0 3px 0",
-            color: "#111827",
-            letterSpacing: "-0.35px",
-          }}
-        >
-          {cv.header.fullName}
-        </h1>
-        <div
-          style={{
-            fontSize: "10.3pt",
-            fontWeight: 600,
-            color: accentColor,
-            marginBottom: "5px",
-            textWrap: "balance" as any,
-          }}
-        >
-          {cv.header.headline}
+      <div
+        className="break-avoid"
+        style={
+          hasPhoto
+            ? {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+                paddingBottom: "8px",
+                borderBottom: "1px solid #e2e8f0",
+              }
+            : { textAlign: "center", marginBottom: "10px" }
+        }
+      >
+        <div style={{ flex: 1 }}>
+          <h1
+            style={{
+              fontSize: "20.5pt",
+              fontWeight: 700,
+              margin: "0 0 3px 0",
+              color: "#111827",
+              letterSpacing: "-0.35px",
+            }}
+          >
+            {cv.header.fullName}
+          </h1>
+          <div
+            style={{
+              fontSize: "10.3pt",
+              fontWeight: 600,
+              color: accentColor,
+              marginBottom: "5px",
+              textWrap: "balance" as any,
+            }}
+          >
+            {cv.header.headline}
+          </div>
+          <div style={{ fontSize: "8.7pt", color: "#374151" }}>
+            {[cv.header.location, cv.header.email, cv.header.phone].filter(Boolean).join("  ·  ")}
+            {cv.header.links &&
+              cv.header.links.map((link, idx) => {
+                const displayUrl = link.url
+                  .replace(/^https?:\/\//i, "")
+                  .replace(/^www\./i, "")
+                  .replace(/\/$/, "");
+                return (
+                  <span key={idx}>
+                    {"  ·  "}
+                    <a href={link.url} style={{ color: accentColor, textDecoration: "none", fontWeight: 600 }}>
+                      {displayUrl}
+                    </a>
+                  </span>
+                );
+              })}
+          </div>
+          <div style={{ fontSize: "8.5pt", color: "#4b5563", marginTop: "2.5px" }}>
+            <strong style={{ color: "#374151" }}>{labels.availability}:</strong> {cv.header.availability}
+            {cv.header.languages && cv.header.languages.length > 0 && (
+              <>
+                {"  ·  "}
+                <strong style={{ color: "#374151" }}>{labels.languages}:</strong>{" "}
+                {cv.header.languages.map((l) => `${l.language} (${l.level})`).join(", ")}
+              </>
+            )}
+          </div>
         </div>
-        <div style={{ fontSize: "8.7pt", color: "#374151" }}>
-          {[cv.header.location, cv.header.email, cv.header.phone].filter(Boolean).join("  ·  ")}
-          {cv.header.links &&
-            cv.header.links.map((link, idx) => {
-              const displayUrl = link.url
-                .replace(/^https?:\/\//i, "")
-                .replace(/^www\./i, "")
-                .replace(/\/$/, "");
-              return (
-                <span key={idx}>
-                  {"  ·  "}
-                  <a href={link.url} style={{ color: accentColor, textDecoration: "none", fontWeight: 600 }}>
-                    {displayUrl}
-                  </a>
-                </span>
-              );
-            })}
-        </div>
-        <div style={{ fontSize: "8.5pt", color: "#4b5563", marginTop: "2.5px" }}>
-          <strong style={{ color: "#374151" }}>{labels.availability}:</strong> {cv.header.availability}
-          {cv.header.languages && cv.header.languages.length > 0 && (
-            <>
-              {"  ·  "}
-              <strong style={{ color: "#374151" }}>{labels.languages}:</strong>{" "}
-              {cv.header.languages.map((l) => `${l.language} (${l.level})`).join(", ")}
-            </>
-          )}
-        </div>
+        {hasPhoto && (
+          <div style={portraitStyle.container}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photoUrl} alt={cv.header.fullName} style={portraitStyle.image} />
+          </div>
+        )}
       </div>
 
       {/* Professional Profile */}
@@ -791,7 +874,7 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
   const fontFamily = data.templateSettings?.fontFamily || "Inter";
   const showPhoto = data.assetSettings?.photo?.enabled;
   const photoUrl = photoBase64 || data.assetSettings?.photo?.filePath;
-  const cropStyle = data.assetSettings?.photo?.cropStyle || "circle";
+  const cropStyle = data.assetSettings?.photo?.cropStyle || "portrait-rectangle";
 
   const fontSize = data.templateSettings?.fontSize || 10;
   const lineSpacing = data.templateSettings?.lineSpacing || 1.32;
@@ -803,29 +886,7 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
   const cleanSkills = getCleanSkills(cv.coreSkills);
   const cleanProjects = showProjects ? getCleanProjects(cv.projects) : [];
 
-  const getPhotoStyle = () => {
-    const isCircle = cropStyle === "circle";
-    const isPortrait = cropStyle === "portrait-rectangle";
-    return {
-      container: {
-        display: "inline-block",
-        padding: "2.5px",
-        backgroundColor: "#ffffff",
-        border: `1.5px solid ${accentColor}`,
-        borderRadius: isCircle ? "50%" : isPortrait ? "10px" : "12px",
-        boxShadow: "0 6px 14px -2px rgba(16, 35, 63, 0.12)",
-        flexShrink: 0,
-        marginLeft: "16px",
-      },
-      image: {
-        width: isPortrait ? "88px" : "98px",
-        height: isPortrait ? "112px" : "98px",
-        borderRadius: isCircle ? "50%" : isPortrait ? "7px" : "9px",
-        objectFit: "cover" as const,
-        display: "block",
-      },
-    };
-  };
+  const getPhotoStyle = () => getExecutivePortraitStyle(cropStyle, accentColor, "modern");
 
   const renderSectionTitle = (title: string) => (
     <div
@@ -1601,7 +1662,7 @@ export const AtsLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) =>
 };
 
 // -------------------------------------------------------------
-// 4. EXECUTIVE SIDEBAR COVER LETTER TEMPLATE (BERLIN EXECUTIVE DIN 5008)
+// 4. ASR SIDEBAR COVER LETTER TEMPLATE (BERLIN EXECUTIVE DIN 5008)
 // -------------------------------------------------------------
 export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) => {
   const letter = data.coverLetterContent;
@@ -1674,13 +1735,13 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
   const effectiveParagraphGap =
     letterWordCount > 315 ? 7.5 : letterWordCount < 230 ? 11.5 : Math.max(sectionSpacing - 4, 9);
 
-  const monogramInitials = (cv?.header?.fullName || "Candidate")
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w: string) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 3) || "CV";
+  const monogramInitials =
+    (cv.header.fullName || "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((w) => w[0]?.toUpperCase() || "")
+      .join("") || "CV";
 
   return (
     <div
@@ -1716,7 +1777,7 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
           boxSizing: "border-box",
         }}
       >
-        {/* Executive Monogram (Dynamic Initials) */}
+        {/* Executive Monogram */}
         <div
           className="monogram"
           style={{

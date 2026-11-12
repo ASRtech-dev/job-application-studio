@@ -153,9 +153,9 @@ export const AssetSettingsSchema = z.object({
   photo: z.object({
     enabled: z.boolean().default(false),
     filePath: z.string().optional(),
-    cropStyle: z.enum(["circle", "rounded-square", "portrait-rectangle"]).default("circle"),
-    placement: z.enum(["sidebar", "header-right"]).default("sidebar"),
-  }).default({ enabled: false, cropStyle: "circle", placement: "sidebar" }),
+    cropStyle: z.enum(["circle", "rounded-square", "portrait-rectangle"]).default("portrait-rectangle"),
+    placement: z.enum(["sidebar", "header-right"]).default("header-right"),
+  }).default({ enabled: false, cropStyle: "portrait-rectangle", placement: "header-right" }),
 });
 
 export type AssetSettings = z.infer<typeof AssetSettingsSchema>;

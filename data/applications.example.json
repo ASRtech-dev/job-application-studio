@@ -238,8 +238,8 @@
       },
       "photo": {
         "enabled": false,
-        "cropStyle": "circle",
-        "placement": "sidebar"
+        "cropStyle": "portrait-rectangle",
+        "placement": "header-right"
       }
     }
   }
