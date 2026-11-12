@@ -25,6 +25,7 @@ const SECTION_LABELS: Record<
     certifications: string;
     languages: string;
     availability: string;
+    promoted: string;
   }
 > = {
   English: {
@@ -37,6 +38,7 @@ const SECTION_LABELS: Record<
     certifications: "Certifications",
     languages: "Languages",
     availability: "Availability",
+    promoted: "↑ Internal Promotion",
   },
   German: {
     profile: "Berufsprofil",
@@ -48,6 +50,7 @@ const SECTION_LABELS: Record<
     certifications: "Zertifizierungen",
     languages: "Sprachen",
     availability: "Verfügbarkeit",
+    promoted: "↑ Interner Aufstieg",
   },
   Spanish: {
     profile: "Perfil Profesional",
@@ -59,6 +62,7 @@ const SECTION_LABELS: Record<
     certifications: "Certificaciones",
     languages: "Idiomas",
     availability: "Disponibilidad",
+    promoted: "↑ Promoción interna",
   },
 };
 
@@ -80,15 +84,104 @@ function getEffectiveLanguage(data: Application): DocLang {
   return "English";
 }
 
+function renderLocalizedDateRange(dates: string | undefined, lang: DocLang): string {
+  if (!dates) return "";
+  if (lang === "German") {
+    return dates
+      .replace(/\bJan\b\.?/g, "Jan.")
+      .replace(/\bFeb\b\.?/g, "Feb.")
+      .replace(/\bMar\b\.?/g, "März")
+      .replace(/\bApr\b\.?/g, "Apr.")
+      .replace(/\bMay\b/g, "Mai")
+      .replace(/\bJun\b\.?/g, "Juni")
+      .replace(/\bJul\b\.?/g, "Juli")
+      .replace(/\bAug\b\.?/g, "Aug.")
+      .replace(/\bSep\b\.?/g, "Sep.")
+      .replace(/\bOct\b\.?/g, "Okt.")
+      .replace(/\bNov\b\.?/g, "Nov.")
+      .replace(/\bDec\b\.?/g, "Dez.")
+      .replace(/\bPresent\b/gi, "Heute");
+  }
+  if (lang === "Spanish") {
+    return dates
+      .replace(/\bJan\b\.?/g, "Ene.")
+      .replace(/\bFeb\b\.?/g, "Feb.")
+      .replace(/\bMar\b\.?/g, "Mar.")
+      .replace(/\bApr\b\.?/g, "Abr.")
+      .replace(/\bMay\b/g, "May.")
+      .replace(/\bJun\b\.?/g, "Jun.")
+      .replace(/\bJul\b\.?/g, "Jul.")
+      .replace(/\bAug\b\.?/g, "Ago.")
+      .replace(/\bSep\b\.?/g, "Sep.")
+      .replace(/\bOct\b\.?/g, "Oct.")
+      .replace(/\bNov\b\.?/g, "Nov.")
+      .replace(/\bDec\b\.?/g, "Dic.")
+      .replace(/\bPresent\b/gi, "Actualidad");
+  }
+  return dates;
+}
+
+function renderLocalizedLocation(loc: string | undefined, lang: DocLang): string {
+  if (!loc) return "";
+  if (lang === "German") {
+    return loc.replace(/\bBerlin,\s*Germany\b/gi, "Berlin, Deutschland").replace(/\bGermany\b/gi, "Deutschland");
+  }
+  if (lang === "Spanish") {
+    return loc.replace(/\bBerlin,\s*Germany\b/gi, "Berlín, Alemania").replace(/\bGermany\b/gi, "Alemania");
+  }
+  return loc;
+}
+
+function renderLocalizedProjectRole(role: string | undefined, lang: DocLang): string {
+  if (!role) return "";
+  if (lang === "German") {
+    return role
+      .replace(/^AI Automation Engineer$/i, "KI-Automatisierungsingenieur")
+      .replace(/^Lead Architect & Developer$/i, "Lead-Architekt & Entwickler")
+      .replace(/^Co-Creator & Product Developer$/i, "Mitentwickler & Produktentwickler");
+  }
+  if (lang === "Spanish") {
+    return role
+      .replace(/^AI Automation Engineer$/i, "Ingeniero de Automatización IA")
+      .replace(/^Lead Architect & Developer$/i, "Arquitecto Principal y Desarrollador")
+      .replace(/^Co-Creator & Product Developer$/i, "Co-Creador y Desarrollador de Producto");
+  }
+  return role;
+}
+
+function isSameCompany(compA?: string, compB?: string): boolean {
+  if (!compA || !compB) return false;
+  const normA = compA.toLowerCase().replace(/\bgmbh\b|\binc\.?\b|\bltd\.?\b/g, "").trim();
+  const normB = compB.toLowerCase().replace(/\bgmbh\b|\binc\.?\b|\bltd\.?\b/g, "").trim();
+  return Boolean(normA && normB && (normA === normB || normA.includes(normB) || normB.includes(normA)));
+}
+
+function getLanguageMatchedValueHook(data: Application, lang: DocLang): string | null {
+  const hook = data.qualityControl?.oneSentencePositioning?.trim();
+  if (!hook) return null;
+  // Ensure we don't render an English qualityControl summary inside a German or Spanish Cover Letter
+  const looksGerman = /\b(und|für|mit|über|durch|sowie|Ein|Eine|der|die)\b/.test(hook);
+  const looksSpanish = /\b(para|con|los|las|una|por|sobre|que)\b/.test(hook);
+  if (lang === "German" && !looksGerman) return null;
+  if (lang === "Spanish" && !looksSpanish) return null;
+  if (lang === "English" && (looksGerman || looksSpanish)) return null;
+  return hook;
+}
+
 // -------------------------------------------------------------
 // RICH TEXT & METRIC EMPHASIS HELPER (100% ATS-SAFE INLINE DOM)
 // -------------------------------------------------------------
 const METRIC_REGEX =
-  /(\*\*[^*]+?\*\*|\b\d+(?:[.,]\d+)?\s*(?:%|percent|Prozent)\b|(?:€|\$|£)\s*\d+(?:[.,]\d+)?\s*[KMBkmb]?\+?|\b\d+(?:[.,]\d+)?\s*[KMBkmb]?\+?\s*(?:€|EUR|USD)\b|\b\d+\+\s*(?:documented\s+processes|processes|dokumentierte\s+Prozesse|procesos\s+documentados|markets|Märkte|mercados)\b|\b14\s+(?:European\s+markets|europäischen?\s+Märkten?|mercados\s+europeos)\b)/gi;
+  /(\*\*[^*]+?\*\*|\b\d+(?:[.,]\d+)?\s*(?:%|percent|Prozent)\b|(?:€|\$|£)\s*\d+(?:[.,]\d+)?\s*[KMBkmb]?\+?|\b\d+(?:[.,]\d+)?\s*[KMBkmb]?\+?\s*(?:€|EUR|USD)\b|\b\d+\+\s*(?:documented\s+processes|processes|dokumentierte\s+Prozesse|procesos\s+documentados|markets|Märkte|mercados)\b|\b14\s+(?:European\s+markets|europäischen?\s+Märkten?|mercados\s+europeos)\b|\b13[- ]second(?:s)?\b)/gi;
 
-export function renderRichText(text: string, autoHighlightMetrics = true): React.ReactNode {
+export function renderRichText(text: string, autoHighlightMetrics = true, maxBolds = 2): React.ReactNode {
   if (!text) return null;
-  const cleaned = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1");
+  const cleaned = text
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
+    .replace(
+      /\b(interact|work|operate|function|collaborate|integrate|scale|execute)\s+and\s+(efficiently|effectively|reliably|accurately|securely|smoothly)\b/gi,
+      "$1 $2"
+    );
 
   const hasExplicitBold = cleaned.includes("**");
   if (!autoHighlightMetrics && !hasExplicitBold) {
@@ -106,7 +199,7 @@ export function renderRichText(text: string, autoHighlightMetrics = true): React
     if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
       boldCount++;
       const inner = part.slice(2, -2);
-      if (boldCount > 2) {
+      if (boldCount > maxBolds) {
         return <React.Fragment key={idx}>{inner}</React.Fragment>;
       }
       return (
@@ -118,7 +211,7 @@ export function renderRichText(text: string, autoHighlightMetrics = true): React
     if (!hasExplicitBold && autoHighlightMetrics && METRIC_REGEX.test(part)) {
       METRIC_REGEX.lastIndex = 0;
       boldCount++;
-      if (boldCount > 2) {
+      if (boldCount > maxBolds) {
         return <React.Fragment key={idx}>{part}</React.Fragment>;
       }
       return (
@@ -498,8 +591,37 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
           >
             {cv.header.headline}
           </div>
-          <div style={{ fontSize: "8.7pt", color: "#374151" }}>
-            {[cv.header.location, cv.header.email, cv.header.phone].filter(Boolean).join("  ·  ")}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: hasPhoto ? "flex-start" : "center",
+              alignItems: "center",
+              gap: "2px 7px",
+              fontSize: "8.6pt",
+              color: "#374151",
+            }}
+          >
+            {cv.header.location && (
+              <span style={{ whiteSpace: "nowrap" }}>{renderLocalizedLocation(cv.header.location, lang)}</span>
+            )}
+            {cv.header.email && (
+              <>
+                <span style={{ color: "#9ca3af" }}>·</span>
+                <a
+                  href={`mailto:${cv.header.email}`}
+                  style={{ color: "#374151", textDecoration: "none", whiteSpace: "nowrap" }}
+                >
+                  {cv.header.email}
+                </a>
+              </>
+            )}
+            {cv.header.phone && (
+              <>
+                <span style={{ color: "#9ca3af" }}>·</span>
+                <span style={{ whiteSpace: "nowrap" }}>{cv.header.phone}</span>
+              </>
+            )}
             {cv.header.links &&
               cv.header.links.map((link, idx) => {
                 const displayUrl = link.url
@@ -507,22 +629,42 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
                   .replace(/^www\./i, "")
                   .replace(/\/$/, "");
                 return (
-                  <span key={idx}>
-                    {"  ·  "}
-                    <a href={link.url} style={{ color: accentColor, textDecoration: "none", fontWeight: 600 }}>
+                  <React.Fragment key={idx}>
+                    <span style={{ color: "#9ca3af" }}>·</span>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: accentColor, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}
+                    >
                       {displayUrl}
                     </a>
-                  </span>
+                  </React.Fragment>
                 );
               })}
           </div>
-          <div style={{ fontSize: "8.5pt", color: "#4b5563", marginTop: "2.5px" }}>
-            <strong style={{ color: "#374151" }}>{labels.availability}:</strong> {cv.header.availability}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: hasPhoto ? "flex-start" : "center",
+              alignItems: "center",
+              gap: "2px 8px",
+              fontSize: "8.4pt",
+              color: "#4b5563",
+              marginTop: "2.5px",
+            }}
+          >
+            <span style={{ whiteSpace: "nowrap" }}>
+              <strong style={{ color: "#374151" }}>{labels.availability}:</strong> {cv.header.availability}
+            </span>
             {cv.header.languages && cv.header.languages.length > 0 && (
               <>
-                {"  ·  "}
-                <strong style={{ color: "#374151" }}>{labels.languages}:</strong>{" "}
-                {cv.header.languages.map((l) => `${l.language} (${l.level})`).join(", ")}
+                <span style={{ color: "#9ca3af" }}>·</span>
+                <span>
+                  <strong style={{ color: "#374151" }}>{labels.languages}:</strong>{" "}
+                  {cv.header.languages.map((l) => `${l.language} (${l.level})`).join(", ")}
+                </span>
               </>
             )}
           </div>
@@ -638,6 +780,7 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
           {cv.experience.map((exp, idx) => {
             const firstBullets = exp.bullets.slice(0, 2);
             const restBullets = exp.bullets.slice(2);
+            const isPromotedFromBelow = isSameCompany(exp.company, cv.experience[idx + 1]?.company);
             return (
               <div key={exp.id || idx} className="experience-entry" style={{ marginBottom: "9.5px" }}>
                 <div className="break-avoid">
@@ -656,6 +799,24 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
                       {exp.company && (
                         <span style={{ color: accentColor, fontWeight: 600 }}>  —  {exp.company}</span>
                       )}
+                      {isPromotedFromBelow && (
+                        <span
+                          style={{
+                            marginLeft: "6px",
+                            fontSize: `${fontSize - 2.1}pt`,
+                            fontWeight: 600,
+                            color: accentColor,
+                            backgroundColor: "#f1f5f9",
+                            border: "0.5px solid #cbd5e1",
+                            padding: "0.5px 5px",
+                            borderRadius: "3px",
+                            verticalAlign: "1px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {labels.promoted}
+                        </span>
+                      )}
                     </div>
                     <div
                       style={{
@@ -666,9 +827,12 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {exp.dates}
+                      {renderLocalizedDateRange(exp.dates, lang)}
                       {exp.location && (
-                        <span style={{ fontWeight: 400, color: "#6b7280" }}> · {exp.location}</span>
+                        <span style={{ fontWeight: 400, color: "#6b7280" }}>
+                          {" "}
+                          · {renderLocalizedLocation(exp.location, lang)}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -735,7 +899,10 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
         <div style={{ marginBottom: `${sectionSpacing}px` }}>
           <h2 style={sectionHeadingStyle}>{labels.projects}</h2>
           {cleanProjects.map((proj, idx) => {
-            const { cleanTitle, cleanRole, hasParensInTitle } = formatProjectTitleAndRole(proj.title, proj.role);
+            const { cleanTitle, cleanRole, hasParensInTitle } = formatProjectTitleAndRole(
+              proj.title,
+              renderLocalizedProjectRole(proj.role, lang)
+            );
             return (
               <div key={proj.id || idx} className="project-entry break-avoid" style={{ marginBottom: "7.5px" }}>
                 <div
@@ -765,7 +932,7 @@ export const AtsCleanCv: React.FC<TemplateProps> = ({ data, photoBase64 }) => {
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {proj.dates}
+                      {renderLocalizedDateRange(proj.dates, lang)}
                     </div>
                   )}
                 </div>
@@ -991,24 +1158,24 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: "3px 10px",
+              gap: "2.5px 9px",
               fontSize: `${fontSize - 1.4}pt`,
               color: "#4b5563",
             }}
           >
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconPin color={accentColor} />
-              {cv.header.location}
+              {renderLocalizedLocation(cv.header.location, lang)}
             </span>
             <span style={{ color: "#cbd5e1" }}>·</span>
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconMail color={accentColor} />
               <a href={`mailto:${cv.header.email}`} style={{ color: "#374151", textDecoration: "none" }}>
                 {cv.header.email}
               </a>
             </span>
             <span style={{ color: "#cbd5e1" }}>·</span>
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconPhone color={accentColor} />
               {cv.header.phone}
             </span>
@@ -1022,7 +1189,7 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: accentColor, textDecoration: "none", fontWeight: 600 }}
+                      style={{ color: accentColor, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}
                     >
                       {cleanUrl}
                     </a>
@@ -1037,13 +1204,13 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: "3px 10px",
+              gap: "2.5px 9px",
               fontSize: `${fontSize - 1.5}pt`,
               color: "#4b5563",
               marginTop: "3px",
             }}
           >
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconCalendar color={accentColor} />
               <strong style={{ color: "#374151", marginRight: "3px" }}>{labels.availability}:</strong>
               {cv.header.availability}
@@ -1089,32 +1256,27 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
         </div>
       )}
 
-      {/* BAND 2: KEY ACHIEVEMENTS */}
+      {/* BAND 2: KEY ACHIEVEMENTS (100% ATS-SAFE SEMANTIC LIST WITH EXECUTIVE ACCENT CALLOUT) */}
       {showKeyAchievements && cv.keyAchievements && cv.keyAchievements.length > 0 && (
         <div style={{ marginBottom: `${sectionSpacing}px` }}>
           <div className="break-avoid">
             {renderSectionTitle(labels.achievements)}
-            <div style={{ display: "flex", flexDirection: "column", gap: "3.5px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "7px",
-                  alignItems: "flex-start",
-                  lineHeight: bulletLineHeight,
-                  fontSize: `${fontSize - 0.3}pt`,
-                }}
-              >
-                <span style={{ color: accentColor, fontWeight: 700, flexShrink: 0 }}>▸</span>
-                <span style={{ color: "#1f2937", textAlign: "left", textWrap: "pretty" as any }}>
-                  {renderRichText(cv.keyAchievements[0], true)}
-                </span>
-              </div>
-            </div>
-          </div>
-          {cv.keyAchievements.length > 1 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "3.5px", marginTop: "3.5px" }}>
-              {cv.keyAchievements.slice(1).map((achievement, idx) => (
-                <div
+            <ul
+              style={{
+                listStyle: "none",
+                margin: 0,
+                padding: "5.5px 10px",
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderLeft: `2.5px solid ${accentColor}`,
+                borderRadius: "5px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "3.5px",
+              }}
+            >
+              {cv.keyAchievements.map((achievement, idx) => (
+                <li
                   key={idx}
                   className="break-avoid"
                   style={{
@@ -1129,10 +1291,10 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
                   <span style={{ color: "#1f2937", textAlign: "left", textWrap: "pretty" as any }}>
                     {renderRichText(achievement, true)}
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
-          )}
+            </ul>
+          </div>
         </div>
       )}
 
@@ -1187,7 +1349,7 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
         </div>
       )}
 
-      {/* BAND 4: PROFESSIONAL EXPERIENCE (FULL WIDTH EDITORIAL — NO BARCODE BORDERS) */}
+      {/* BAND 4: PROFESSIONAL EXPERIENCE (FULL WIDTH EDITORIAL + INTERNAL PROMOTION TRACK) */}
       {cv.experience && cv.experience.length > 0 && (
         <div style={{ marginBottom: `${sectionSpacing}px` }}>
           {renderSectionTitle(labels.experience)}
@@ -1195,10 +1357,22 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
             {cv.experience.map((exp, idx) => {
               const firstBullets = exp.bullets.slice(0, 2);
               const restBullets = exp.bullets.slice(2);
+              const isPromotedFromBelow = isSameCompany(exp.company, cv.experience[idx + 1]?.company);
+              const isPromotedIntoAbove = isSameCompany(exp.company, cv.experience[idx - 1]?.company);
+              const isSameCompanyChain = isPromotedFromBelow || isPromotedIntoAbove;
+
               return (
                 <div
                   key={exp.id || idx}
                   className="experience-entry"
+                  style={
+                    isSameCompanyChain
+                      ? {
+                          borderLeft: "2px solid #cbd5e1",
+                          paddingLeft: "9px",
+                        }
+                      : undefined
+                  }
                 >
                   <div className="break-avoid">
                     <div
@@ -1215,6 +1389,24 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
                         {exp.company && (
                           <span style={{ fontWeight: 600, color: accentColor }}>  —  {exp.company}</span>
                         )}
+                        {isPromotedFromBelow && (
+                          <span
+                            style={{
+                              marginLeft: "7px",
+                              fontSize: `${fontSize - 2.2}pt`,
+                              fontWeight: 600,
+                              color: accentColor,
+                              backgroundColor: "#f1f5f9",
+                              border: "1px solid #cbd5e1",
+                              padding: "0.5px 5.5px",
+                              borderRadius: "4px",
+                              verticalAlign: "1px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {labels.promoted}
+                          </span>
+                        )}
                       </div>
                       <div
                         style={{
@@ -1225,9 +1417,12 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        {exp.dates}
+                        {renderLocalizedDateRange(exp.dates, lang)}
                         {exp.location && (
-                          <span style={{ fontWeight: 400, color: "#6b7280" }}> · {exp.location}</span>
+                          <span style={{ fontWeight: 400, color: "#6b7280" }}>
+                            {" "}
+                            · {renderLocalizedLocation(exp.location, lang)}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1300,7 +1495,10 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
           {renderSectionTitle(labels.projects)}
           <div style={{ display: "flex", flexDirection: "column", gap: "7.5px" }}>
             {cleanProjects.map((proj, idx) => {
-              const { cleanTitle, cleanRole, hasParensInTitle } = formatProjectTitleAndRole(proj.title, proj.role);
+              const { cleanTitle, cleanRole, hasParensInTitle } = formatProjectTitleAndRole(
+                proj.title,
+                renderLocalizedProjectRole(proj.role, lang)
+              );
               return (
                 <div
                   key={proj.id || idx}
@@ -1333,7 +1531,7 @@ export const ModernProfessionalCv: React.FC<TemplateProps> = ({ data, photoBase6
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        {proj.dates}
+                        {renderLocalizedDateRange(proj.dates, lang)}
                       </div>
                     )}
                   </div>
@@ -1480,6 +1678,12 @@ export const AtsLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) =>
       ? `Candidatura al puesto de ${targetRole}`
       : `Application for ${targetRole}`;
 
+  const valueHook = getLanguageMatchedValueHook(data, lang);
+  const normalizedGreeting = (letter.greeting || "")
+    .replace(/\bhiring team\b/g, "Hiring Team")
+    .replace(/\brecruiting team\b/g, "Recruiting Team");
+  const localizedHeaderLocation = renderLocalizedLocation(cv.header.location, lang);
+
   const letterWordCount = (letter.paragraphs || [])
     .map((p) => p.text || "")
     .join(" ")
@@ -1538,22 +1742,36 @@ export const AtsLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) =>
         >
           {letter.positioningLine}
         </div>
-        <div style={{ fontSize: "8.4pt", color: "#4b5563" }}>
-          {[cv.header.location, cv.header.email, cv.header.phone].filter(Boolean).join("  ·  ")}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 6px", fontSize: "8.4pt", color: "#4b5563" }}>
+          {localizedHeaderLocation && <span style={{ whiteSpace: "nowrap" }}>{localizedHeaderLocation}</span>}
+          {cv.header.email && (
+            <>
+              <span style={{ color: "#9ca3af" }}>·</span>
+              <span style={{ whiteSpace: "nowrap" }}>{cv.header.email}</span>
+            </>
+          )}
+          {cv.header.phone && (
+            <>
+              <span style={{ color: "#9ca3af" }}>·</span>
+              <span style={{ whiteSpace: "nowrap" }}>{cv.header.phone}</span>
+            </>
+          )}
           {cv.header.links &&
             cv.header.links.map((link, idx) => {
               const cleanUrl = link.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
               return (
                 <React.Fragment key={idx}>
-                  {"  ·  "}
-                  <a href={link.url} style={{ color: "#111827", textDecoration: "none", fontWeight: 600 }}>
+                  <span style={{ color: "#9ca3af" }}>·</span>
+                  <a href={link.url} style={{ color: "#111827", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
                     {cleanUrl}
                   </a>
                 </React.Fragment>
               );
             })}
-          {"  ·  "}
-          <strong>{labels.availability}:</strong> {cv.header.availability}
+          <span style={{ color: "#9ca3af" }}>·</span>
+          <span style={{ whiteSpace: "nowrap" }}>
+            <strong>{labels.availability}:</strong> {cv.header.availability}
+          </span>
         </div>
       </div>
 
@@ -1571,7 +1789,7 @@ export const AtsLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) =>
           <div style={{ fontSize: "8.8pt", lineHeight: 1.35, color: "#374151" }}>
             <div style={{ fontWeight: 700, color: "#111827", fontSize: "9.4pt" }}>{targetCompany}</div>
             <div>{recipientDept}</div>
-            <div style={{ color: "#6b7280", fontSize: "8.4pt" }}>{targetLocation}</div>
+            <div style={{ color: "#6b7280", fontSize: "8.4pt" }}>{renderLocalizedLocation(targetLocation, lang)}</div>
           </div>
         ) : (
           <div />
@@ -1581,24 +1799,37 @@ export const AtsLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) =>
         </div>
       </div>
 
-      {/* DIN 5008 Executive Subject Line (Betreffzeile) */}
+      {/* DIN 5008 Executive Subject Line (Betreffzeile) + Strategic Value Hook */}
       {targetRole && (
-        <div
-          style={{
-            marginBottom: "12px",
-            fontSize: "10.2pt",
-            fontWeight: 700,
-            color: "#111827",
-            letterSpacing: "-0.1px",
-          }}
-        >
-          {computedSubject}
+        <div style={{ marginBottom: "12px" }}>
+          <div
+            style={{
+              fontSize: "10.2pt",
+              fontWeight: 700,
+              color: "#111827",
+              letterSpacing: "-0.1px",
+            }}
+          >
+            {computedSubject}
+          </div>
+          {valueHook && valueHook !== letter.positioningLine && (
+            <div
+              style={{
+                fontSize: "8.5pt",
+                fontWeight: 600,
+                color: "#4b5563",
+                marginTop: "2px",
+              }}
+            >
+              {valueHook}
+            </div>
+          )}
         </div>
       )}
 
       {/* Greeting */}
       <div style={{ marginBottom: "12px", fontWeight: 700, color: "#111827" }}>
-        {letter.greeting}
+        {normalizedGreeting}
       </div>
 
       {/* Letter Body */}
@@ -1612,7 +1843,7 @@ export const AtsLetter: React.FC<TemplateProps> = ({ data, signatureBase64 }) =>
               textWrap: "pretty" as any,
             }}
           >
-            {renderRichText(p.text, true)}
+            {renderRichText(p.text, true, 1)}
           </p>
         ))}
       </div>
@@ -1713,6 +1944,12 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
       : lang === "Spanish"
       ? `Candidatura al puesto de ${targetRole}`
       : `Application for ${targetRole}`;
+
+  const valueHook = getLanguageMatchedValueHook(data, lang);
+  const normalizedGreeting = (letter.greeting || "")
+    .replace(/\bhiring team\b/g, "Hiring Team")
+    .replace(/\brecruiting team\b/g, "Recruiting Team");
+  const localizedHeaderLocation = renderLocalizedLocation(cv.header.location, lang);
 
   const letterWordCount = (letter.paragraphs || [])
     .map((p) => p.text || "")
@@ -1889,19 +2126,19 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
               margin: "0 0 3px 0",
             }}
           >
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconPin color="#6d8ead" />
-              {cv.header.location}
+              {localizedHeaderLocation}
             </span>
             <span style={{ color: "#cbd5e1" }}>·</span>
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconMail color="#6d8ead" />
               <a href={`mailto:${cv.header.email}`} style={{ color: "#4b5563", textDecoration: "none" }}>
                 {cv.header.email}
               </a>
             </span>
             <span style={{ color: "#cbd5e1" }}>·</span>
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconPhone color="#6d8ead" />
               {cv.header.phone}
             </span>
@@ -1915,7 +2152,7 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: accentColor, textDecoration: "none", fontWeight: 600 }}
+                      style={{ color: accentColor, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}
                     >
                       {cleanUrl}
                     </a>
@@ -1934,12 +2171,12 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
               margin: "0 0 6px 0",
             }}
           >
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconGlobe color="#6d8ead" />
               {cv.header.languages.map((l) => l.language).join(", ")}
             </span>
             <span style={{ color: "#cbd5e1" }}>·</span>
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
               <IconCalendar color="#6d8ead" />
               {labels.availability}: {cv.header.availability}
             </span>
@@ -1968,7 +2205,7 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
             <div style={{ fontSize: "8.4pt", lineHeight: 1.32, color: "#4b5563" }}>
               <div style={{ fontWeight: 700, color: "#111827", fontSize: "9pt" }}>{targetCompany}</div>
               <div>{recipientDept}</div>
-              <div style={{ color: "#6b7280", fontSize: "8pt" }}>{targetLocation}</div>
+              <div style={{ color: "#6b7280", fontSize: "8pt" }}>{renderLocalizedLocation(targetLocation, lang)}</div>
             </div>
           ) : (
             <div />
@@ -1978,26 +2215,43 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
           </div>
         </div>
 
-        {/* DIN 5008 Executive Subject Line (Betreffzeile) */}
+        {/* DIN 5008 Executive Subject Line (Betreffzeile) + Strategic Value Hook */}
         {targetRole && (
           <div
             style={{
               marginBottom: "10px",
               paddingLeft: "8px",
               borderLeft: `2.5px solid ${accentColor}`,
-              fontSize: "10pt",
-              fontWeight: 700,
-              color: accentColor,
-              letterSpacing: "-0.1px",
             }}
           >
-            {computedSubject}
+            <div
+              style={{
+                fontSize: "10pt",
+                fontWeight: 700,
+                color: accentColor,
+                letterSpacing: "-0.1px",
+              }}
+            >
+              {computedSubject}
+            </div>
+            {valueHook && valueHook !== letter.positioningLine && (
+              <div
+                style={{
+                  fontSize: "8.2pt",
+                  fontWeight: 600,
+                  color: "#4b5563",
+                  marginTop: "1.5px",
+                }}
+              >
+                {valueHook}
+              </div>
+            )}
           </div>
         )}
 
         {/* Greeting */}
         <div style={{ marginBottom: "10px", fontWeight: 700, fontSize: "9.6pt", color: "#111827" }}>
-          {letter.greeting}
+          {normalizedGreeting}
         </div>
 
         {/* Body Text */}
@@ -2019,7 +2273,7 @@ export const AsrSidebarLetter: React.FC<TemplateProps> = ({ data, signatureBase6
                 textWrap: "pretty" as any,
               }}
             >
-              {renderRichText(p.text, true)}
+              {renderRichText(p.text, true, 1)}
             </p>
           ))}
         </div>
@@ -2101,33 +2355,65 @@ export const StarPrepGuide: React.FC<TemplateProps> = ({ data }) => {
   const getStarStory = (text: string) => {
     const lower = text.toLowerCase();
 
-    if (lower.includes("routing") || lower.includes("ticket")) {
+    if (
+      lower.includes("retainer") ||
+      lower.includes("clio") ||
+      lower.includes("13 seconds") ||
+      lower.includes("law firm") ||
+      lower.includes("legal-tech")
+    ) {
+      return {
+        question: "Describe an end-to-end LLM or workflow automation you built that replaced a slow manual process.",
+        situation:
+          "Law firm intake teams spent 20–30 minutes manually drafting retainer agreements per case, causing 2–24 hour response delays and losing up to 30% of leads.",
+        task: "Design a zero-touch legal-tech automation in Make.com and n8n triggered immediately when a consultation is completed in Clio Manage.",
+        action:
+          "Integrated Clio Manage (OAuth 2.0 API), automated Statute of Limitations (accident date + 3 years) and contingent fee logic, generated binary PDF contracts via Google Docs, synthesized an empathetic AI sentence with Google Gemini Flash (with deterministic fallback), and dispatched personalized Gmail messages with seasonal Calendly links.",
+        result:
+          "Cut contract generation and delivery from 20–30 minutes down to 13 seconds with 0s manual delay, 100% lead coverage, and automatic PDF archival back into Clio.",
+      };
+    }
+
+    if (lower.includes("jira") || lower.includes("confluence") || lower.includes("escalation") || lower.includes("bridge")) {
+      return {
+        question: "How do you bridge technical engineering teams and non-technical business stakeholders during incidents?",
+        situation:
+          "Operational incidents and workflow bugs across 14 European markets required fast, structured translation between business stakeholders and backend engineers.",
+        task: "Act as the primary technical escalation bridge and internal process consultant to resolve cross-market incidents without SLA breaches.",
+        action:
+          "Triaged incidents in Jira with reproducible root-cause traces, impact metrics, and acceptance criteria, while advising department heads on process design and maintaining 140+ SOPs in Confluence.",
+        result:
+          "Accelerated engineering resolution cycles and established a standardized governance framework across all 14 European markets.",
+      };
+    }
+
+    if (lower.includes("routing") || lower.includes("ticket") || lower.includes("queue")) {
       return {
         question: "Describe a process optimization project that had a major operational impact.",
         situation: "Managing ticket operations across 14 European markets with significant dispatch delays and manual workload.",
         task: "Identify bottlenecks in routing flows and design an automated solution to reduce routing time without increasing headcount.",
-        action: "Audited current routing guidelines, designed a logic-based ticket-routing engine using n8n/Python automation, and aligned operations teams across multi-market divisions.",
-        result: "Reduced ticket-routing time by 70%, standardizing workflows and improving SLA compliance across all 14 markets.",
+        action: "Audited current routing guidelines, restructured Salesforce queues across 14 EU markets, and deployed automated categorization rules.",
+        result: "Reduced ticket-routing and categorization time by 80–90%, eliminating human routing errors and improving SLA compliance across all 14 markets.",
       };
     }
 
-    if (lower.includes("repository") || lower.includes("documented")) {
+    if (lower.includes("repository") || lower.includes("documented") || lower.includes("140+")) {
       return {
         question: "How do you manage documentation and knowledge sharing in complex multi-market teams?",
         situation: "Lack of process alignment and operational clarity across 14 European markets leading to inconsistent client service.",
-        task: "Establish a single source of truth for standard operating procedures (SOPs) accessible to all cross-functional teams.",
-        action: "Conducted workshops with process managers, standardized documentation formats, and built a central repository containing 140+ processes.",
-        result: "Created a single source of truth, accelerating onboarding and reducing compliance deviations across markets.",
+        task: "Establish a single source of truth for standard operating procedures (SOPs) accessible to all cross-functional teams and AI/RAG pipelines.",
+        action: "Conducted workshops with process managers, standardized BPMN process maps, and built a central repository containing 140+ SOPs.",
+        result: "Created a single source of truth that accelerated onboarding, reduced compliance deviations, and structured the knowledge base for future RAG agents.",
       };
     }
 
-    if (lower.includes("payment") || lower.includes("500k") || lower.includes("losses")) {
+    if (lower.includes("payment") || lower.includes("500k") || lower.includes("700k") || lower.includes("900k") || lower.includes("losses") || lower.includes("benelux")) {
       return {
         question: "Tell me about a time you identified a high-risk compliance issue or saved company costs.",
-        situation: "Unmonitored workflow leakages in billing and payment processing across international market layers.",
-        task: "Audit transaction paths, detect processing anomalies, and implement controls to stop revenue leakages.",
-        action: "Mapped the payment process using BPMN standards, audited billing records, isolated the processing gap, and deployed automated validations.",
-        result: "Prevented €500K in annual process-related losses and established a permanent compliance reporting mechanism.",
+        situation: "Unmonitored workflow leakages in billing and payment processing across international BENELUX market layers.",
+        task: "Audit transaction paths using Lean Six Sigma, detect processing anomalies, and implement controls to stop revenue leakages.",
+        action: "Analyzed large operational datasets, mapped the payment process using BPMN standards, isolated the BENELUX control gap, and deployed corrective controls.",
+        result: "Prevented €700K–€900K in annual process-related losses and established a permanent compliance reporting mechanism.",
       };
     }
 
@@ -2136,7 +2422,7 @@ export const StarPrepGuide: React.FC<TemplateProps> = ({ data }) => {
         question: "Give an example of collaborating with cross-functional teams to solve a technical problem.",
         situation: "High processing times, high error rates, and manual validation bottlenecks in UK claims operations.",
         task: "Bridge gaps between Operations, Finance, and Technical teams to automate claims validation and reduce fraud exposure.",
-        action: "Co-facilitated automation design sessions, helped build claims-screening scripts, and deployed rules-based validations.",
+        action: "Co-facilitated automation design sessions, helped build claims-screening workflows, and deployed rules-based validations.",
         result: "Contributed to a 12% fraud reduction, 50% processing-time reduction, and 35% error-rate reduction in validation cycles.",
       };
     }
@@ -2183,7 +2469,7 @@ export const StarPrepGuide: React.FC<TemplateProps> = ({ data }) => {
           STAR Interview Cheat-Sheet
         </h1>
         <div style={{ fontSize: "9.5pt", color: "#4b5563" }}>
-          Preparación personalizada para <strong>{data.roleTitle}</strong> en <strong>{data.company}</strong>
+          Tailored preparation for <strong>{data.roleTitle}</strong> at <strong>{data.company}</strong>
         </div>
       </div>
 
@@ -2197,10 +2483,9 @@ export const StarPrepGuide: React.FC<TemplateProps> = ({ data }) => {
         }}
       >
         <p style={{ margin: 0, fontSize: "8.5pt", color: "#4b5563", lineHeight: 1.35 }}>
-          <strong>Guía del método STAR:</strong> Estructura tus respuestas en base a la <strong>Situación</strong> (contexto),{" "}
-          <strong>Tarea</strong> (el reto), <strong>Acción</strong> (lo que tú hiciste específicamente) y{" "}
-          <strong>Resultado</strong> (el impacto cuantitativo). Esta hoja recopila los STAR stories específicos mapeados desde
-          tus logros activos en este currículum.
+          <strong>STAR Method Guide:</strong> Structure your interview answers around <strong>Situation</strong> (context),{" "}
+          <strong>Task</strong> (the challenge), <strong>Action</strong> (what you specifically executed), and{" "}
+          <strong>Result</strong> (measurable business impact). This sheet maps your active CV achievements into ready-to-use STAR stories.
         </p>
       </div>
 
@@ -2243,20 +2528,20 @@ export const StarPrepGuide: React.FC<TemplateProps> = ({ data }) => {
                   paddingLeft: "8px",
                 }}
               >
-                Logro: &ldquo;{ach}&rdquo;
+                Achievement: &ldquo;{ach}&rdquo;
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "75px 1fr", gap: "4px 8px", fontSize: "9pt" }}>
-                <span style={{ fontWeight: "bold", color: accentColor }}>SITUACIÓN:</span>
+              <div style={{ display: "grid", gridTemplateColumns: "82px 1fr", gap: "4px 8px", fontSize: "9pt" }}>
+                <span style={{ fontWeight: "bold", color: accentColor }}>SITUATION:</span>
                 <span style={{ color: "#374151" }}>{story.situation}</span>
 
-                <span style={{ fontWeight: "bold", color: accentColor }}>TAREA:</span>
+                <span style={{ fontWeight: "bold", color: accentColor }}>TASK:</span>
                 <span style={{ color: "#374151" }}>{story.task}</span>
 
-                <span style={{ fontWeight: "bold", color: accentColor }}>ACCIÓN:</span>
+                <span style={{ fontWeight: "bold", color: accentColor }}>ACTION:</span>
                 <span style={{ color: "#374151" }}>{story.action}</span>
 
-                <span style={{ fontWeight: "bold", color: accentColor }}>RESULTADO:</span>
+                <span style={{ fontWeight: "bold", color: accentColor }}>RESULT:</span>
                 <span style={{ color: "#10b981", fontWeight: 600 }}>{story.result}</span>
               </div>
             </div>

@@ -4,6 +4,7 @@ export type EmphasisHighlightId =
   | "ai-agents-rag"
   | "process-sops-bpmn"
   | "n8n-make-orchestration"
+  | "legal-tech-contract-automation"
   | "crm-queue-architecture"
   | "lean-six-sigma-audit"
   | "eu-ai-act-compliance"
@@ -62,6 +63,13 @@ export const EMPHASIS_HIGHLIGHT_CATALOG: {
     shortTag: "n8n & Make",
     promptDirective:
       "Frame workflow automation (n8n, Make, REST APIs, Webhooks, Python) as production-grade systems orchestration rather than basic no-code usage.",
+  },
+  {
+    id: "legal-tech-contract-automation",
+    label: "Legal-Tech & Zero-Touch Contract Automation (Make & n8n)",
+    shortTag: "Legal-Tech Automation",
+    promptDirective:
+      "Highlight end-to-end document and contract generation pipelines in Make.com and n8n (CRM OAuth 2.0 APIs, PDF generation, LLM personalization, and automated business logic).",
   },
   {
     id: "crm-queue-architecture",

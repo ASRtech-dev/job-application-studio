@@ -222,6 +222,8 @@ const AI_CLICHE_PATTERNS: Array<{ pattern: RegExp; replacement: string; label: s
   { pattern: /\butilizing\b/gi, replacement: "using", label: "utilizing" },
   { pattern: /\bdelved into\b/gi, replacement: "analyzed", label: "delved into" },
   { pattern: /\bdelving into\b/gi, replacement: "analyzing", label: "delving into" },
+  { pattern: /\b(?:seamlessly|holistically|meticulously|relentlessly|tirelessly)\s+(?:and|or)\s+/gi, replacement: "", label: "adverb+conjunction" },
+  { pattern: /\s+(?:and|or)\s+(?:seamlessly|holistically|meticulously|relentlessly|tirelessly)\b/gi, replacement: "", label: "conjunction+adverb" },
   { pattern: /\bseamlessly\s+/gi, replacement: "", label: "seamlessly" },
   { pattern: /\bholistically\s+/gi, replacement: "", label: "holistically" },
   { pattern: /\bmeticulously\s+/gi, replacement: "", label: "meticulously" },
@@ -242,8 +244,53 @@ export function sanitizeAiText(text: string): string {
       return replacement;
     });
   }
+  out = out.replace(
+    /\b(interact|work|collaborate|communicate|operate|integrate)\s+and\s+(efficiently|effectively|accurately|reliably|autonomously|securely)\b/gi,
+    "$1 $2"
+  );
   out = out.replace(/^\s*([a-z])/, (_, c) => c.toUpperCase());
   return out.replace(/\s{2,}/g, " ").trim();
+}
+
+const CONSECUTIVE_VERB_ALTERNATIVES: Record<string, string[]> = {
+  built: ["Architected", "Engineered", "Developed", "Implemented"],
+  designed: ["Architected", "Structured", "Formulated", "Engineered"],
+  created: ["Developed", "Established", "Produced", "Engineered"],
+  developed: ["Engineered", "Built", "Implemented", "Architected"],
+  implemented: ["Deployed", "Executed", "Operationalized", "Integrated"],
+  led: ["Directed", "Steered", "Guided", "Managed"],
+  managed: ["Directed", "Oversaw", "Governed", "Coordinated"],
+};
+
+export function deduplicateConsecutiveBulletVerbs(bullets: string[]): string[] {
+  if (!Array.isArray(bullets) || bullets.length < 2) return bullets;
+  const result: string[] = [];
+  let prevVerb = "";
+  let altCounter = 0;
+
+  for (const bullet of bullets) {
+    const match = bullet.match(/^([A-Za-zÀ-ÿ-]+)(\s+.*)$/);
+    if (!match) {
+      result.push(bullet);
+      prevVerb = "";
+      continue;
+    }
+    const firstWord = match[1];
+    const rest = match[2];
+    const lowerVerb = firstWord.toLowerCase();
+
+    if (lowerVerb === prevVerb && CONSECUTIVE_VERB_ALTERNATIVES[lowerVerb]) {
+      const alternatives = CONSECUTIVE_VERB_ALTERNATIVES[lowerVerb];
+      const replacement = alternatives[altCounter % alternatives.length];
+      altCounter++;
+      result.push(`${replacement}${rest}`);
+      prevVerb = replacement.toLowerCase();
+    } else {
+      result.push(bullet);
+      prevVerb = lowerVerb;
+    }
+  }
+  return result;
 }
 
 const STOPWORDS = new Set([
@@ -280,17 +327,28 @@ export function deduplicateAchievementsAgainstExperience(app: Application): void
     .filter((e) => e.include !== false)
     .flatMap((e) => e.bullets || []);
 
-  if (expBullets.length === 0) return;
+  if (expBullets.length === 0) {
+    app.cvContent.keyAchievements = achievements.slice(0, 4);
+    return;
+  }
 
-  const nonDuplicate = achievements.filter((ach) => {
+  const scored = achievements.map((ach, idx) => {
     const maxOverlap = Math.max(0, ...expBullets.map((eb) => computeTokenOverlap(ach, eb)));
-    return maxOverlap < 0.62;
+    return { ach, idx, maxOverlap };
   });
 
-  if (nonDuplicate.length > 0) {
-    app.cvContent.keyAchievements = nonDuplicate.slice(0, 3);
+  const nonDuplicate = scored.filter((item) => item.maxOverlap < 0.88).map((item) => item.ach);
+  const targetMin = Math.min(achievements.length, 3);
+
+  if (nonDuplicate.length >= targetMin) {
+    app.cvContent.keyAchievements = nonDuplicate.slice(0, 4);
   } else {
-    app.cvContent.keyAchievements = achievements.slice(0, 2);
+    const sortedByUniqueness = [...scored]
+      .sort((a, b) => a.maxOverlap - b.maxOverlap || a.idx - b.idx)
+      .slice(0, Math.min(achievements.length, 4))
+      .sort((a, b) => a.idx - b.idx)
+      .map((item) => item.ach);
+    app.cvContent.keyAchievements = sortedByUniqueness;
   }
 }
 
@@ -298,16 +356,18 @@ export function sanitizeApplicationAiContent(app: Application): Application {
   const copy = JSON.parse(JSON.stringify(app)) as Application;
   copy.cvContent.header.headline = sanitizeAiText(copy.cvContent.header.headline);
   copy.cvContent.professionalProfile = sanitizeAiText(copy.cvContent.professionalProfile);
-  copy.cvContent.keyAchievements = (copy.cvContent.keyAchievements || []).map(sanitizeAiText);
+  copy.cvContent.keyAchievements = deduplicateConsecutiveBulletVerbs(
+    (copy.cvContent.keyAchievements || []).map(sanitizeAiText)
+  );
   copy.cvContent.experience = (copy.cvContent.experience || []).map((exp) => ({
     ...exp,
     summary: exp.summary ? sanitizeAiText(exp.summary) : exp.summary,
-    bullets: (exp.bullets || []).map(sanitizeAiText),
+    bullets: deduplicateConsecutiveBulletVerbs((exp.bullets || []).map(sanitizeAiText)),
   }));
   copy.cvContent.projects = (copy.cvContent.projects || []).map((proj) => ({
     ...proj,
     description: proj.description ? sanitizeAiText(proj.description) : proj.description,
-    bullets: (proj.bullets || []).map(sanitizeAiText),
+    bullets: deduplicateConsecutiveBulletVerbs((proj.bullets || []).map(sanitizeAiText)),
   }));
   copy.coverLetterContent.positioningLine = sanitizeAiText(copy.coverLetterContent.positioningLine);
   copy.coverLetterContent.paragraphs = (copy.coverLetterContent.paragraphs || []).map((p) => ({
@@ -423,9 +483,94 @@ export function analyzeApplicationReadiness(app: Application): {
   };
 }
 
+function localizeDateRange(dateStr: string, lang: "English" | "Spanish" | "German"): string {
+  if (!dateStr) return "";
+  if (lang === "German") {
+    return dateStr
+      .replace(/\bJan\b/g, "Jan.")
+      .replace(/\bFeb\b/g, "Feb.")
+      .replace(/\bMar\b/g, "März")
+      .replace(/\bApr\b/g, "Apr.")
+      .replace(/\bMay\b/g, "Mai")
+      .replace(/\bJun\b/g, "Juni")
+      .replace(/\bJul\b/g, "Juli")
+      .replace(/\bAug\b/g, "Aug.")
+      .replace(/\bSep\b/g, "Sep.")
+      .replace(/\bOct\b/g, "Okt.")
+      .replace(/\bNov\b/g, "Nov.")
+      .replace(/\bDec\b/g, "Dez.")
+      .replace(/\bPresent\b/gi, "Heute")
+      .replace(/\bCurrent\b/gi, "Heute");
+  }
+  if (lang === "Spanish") {
+    return dateStr
+      .replace(/\bJan\b/g, "Ene.")
+      .replace(/\bApr\b/g, "Abr.")
+      .replace(/\bAug\b/g, "Ago.")
+      .replace(/\bDec\b/g, "Dic.")
+      .replace(/\bPresent\b/gi, "Actualidad")
+      .replace(/\bCurrent\b/gi, "Actualidad");
+  }
+  return dateStr;
+}
+
+function localizeLocation(loc: string, lang: "English" | "Spanish" | "German"): string {
+  if (!loc) return "";
+  if (lang === "German") {
+    return loc
+      .replace(/\bBerlin,\s*Germany\b/gi, "Berlin, Deutschland")
+      .replace(/\bGermany\b/gi, "Deutschland")
+      .replace(/\bSpain\b/gi, "Spanien");
+  }
+  if (lang === "Spanish") {
+    return loc
+      .replace(/\bBerlin,\s*Germany\b/gi, "Berlín, Alemania")
+      .replace(/\bGermany\b/gi, "Alemania")
+      .replace(/\bSpain\b/gi, "España");
+  }
+  return loc;
+}
+
+function localizeProjectRole(role: string, lang: "English" | "Spanish" | "German"): string {
+  if (!role) return "";
+  if (lang === "German") {
+    return role
+      .replace(/\bAI Automation Engineer\b/gi, "KI-Automatisierungsingenieur")
+      .replace(/\bLead Builder\b/gi, "Lead-Architekt & Entwickler")
+      .replace(/\bCreator\s*&\s*Developer\b/gi, "Entwickler & Architekt")
+      .replace(/\bCo-Creator\s*&\s*Product Builder\b/gi, "Co-Entwickler & Produktarchitekt");
+  }
+  if (lang === "Spanish") {
+    return role
+      .replace(/\bAI Automation Engineer\b/gi, "Ingeniero de Automatización IA")
+      .replace(/\bLead Builder\b/gi, "Arquitecto y Desarrollador Principal")
+      .replace(/\bCreator\s*&\s*Developer\b/gi, "Creador y Desarrollador")
+      .replace(/\bCo-Creator\s*&\s*Product Builder\b/gi, "Co-Creador y Desarrollador de Producto");
+  }
+  return role;
+}
+
 function localizeApplicationFallbacks(app: Application): void {
   const lang = app.language;
   const roleLabel = app.roleTitle || app.coverLetterContent.roleTitle || "Open Position";
+
+  if (app.coverLetterContent.greeting) {
+    app.coverLetterContent.greeting = app.coverLetterContent.greeting
+      .replace(/\bhiring team\b/g, "Hiring Team")
+      .replace(/\brecruiting team\b/g, "Recruiting Team");
+  }
+
+  app.cvContent.header.location = localizeLocation(app.cvContent.header.location, lang);
+  app.cvContent.experience = (app.cvContent.experience || []).map((exp) => ({
+    ...exp,
+    dates: localizeDateRange(exp.dates, lang),
+    location: localizeLocation(exp.location, lang),
+  }));
+  app.cvContent.projects = (app.cvContent.projects || []).map((proj) => ({
+    ...proj,
+    dates: localizeDateRange(proj.dates, lang),
+    role: localizeProjectRole(proj.role, lang),
+  }));
 
   if (lang === "German") {
     if (!app.coverLetterContent.closingPhrase || app.coverLetterContent.closingPhrase === "Kind regards,") {
@@ -529,7 +674,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     updated.cvContent.keyAchievements = sourceCv.keyAchievements
       .map((a: any) => cleanRichTextField(String(a)))
       .filter(Boolean)
-      .slice(0, 3);
+      .slice(0, 4);
   }
 
   const normalizedSkills = normalizeCoreSkills(sourceCv.coreSkills || sourceCv.skills);
