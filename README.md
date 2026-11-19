@@ -1,6 +1,6 @@
-# Job Application Studio 🚀
+# Job Application Studio v2.0
 
-> **A local-first, privacy-focused studio for generating ATS-optimized, high-converting CVs, DIN 5008 Cover Letters, and complete job application dossiers.**
+> **A 100% local, privacy-first career workspace for drafting ATS-ready CVs, DIN 5008 & executive Cover Letters, evidence-audited AI prompts, multi-document PDF dossiers, and a manual Job Search CRM — built for any profession.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16+-black?style=flat&logo=next.js)](https://nextjs.org/)
@@ -9,187 +9,187 @@
 
 ---
 
-## 🌟 Highlights
+## Highlights
 
-- **100% Local & Private**: No cloud accounts, external databases, or third-party tracking. All your resume data stays entirely on your local machine (`data/*.json`).
-- **DACH 3:4 Executive Portrait & DIN 5008 Layouts**: Engineered by an executive CV design committee with a 3:4 *Bewerbungsfoto* frame, subtle gallery mat, and pixel-perfect A4 typography that scores top percentiles on ATS parsers (`Workday`, `Greenhouse`, `Personio`, `Lever`).
-- **5-Expert AI Prompt Customization Studio**: Built-in master prompt generator for LLMs (`Gemini 2.5 Pro`, `Claude 3.7 Sonnet`, `ChatGPT`) with customizable positioning angles, seniority tone calibration, target CV density, and interactive career highlight toggles.
-- **Anti-AI Detection & Duplication Guardrails**: Automated text sanitizer (`aiJsonMapper.ts`) that eliminates robotic em-dashes, AI clichés, and duplicate bullets between Key Achievements and Experience.
-- **Berlin Editorial Readiness Toolbar**: Live word-budget gauge (`330–460w`), bullet conciseness monitor, 1-Click AI Cleaner, section visibility toggles, and **1-Click Smart Auto-Fit**.
-- **Headless Chromium Vector PDF Compiler & Merger**: Generates searchable, high-resolution vector PDFs and merges your Cover Letter, CV, and Certificates/References into a single DACH *Bewerbungsmappe* PDF bundle.
+- **100% Local, Offline & Private**: Zero cloud accounts, external databases, or telemetry. Your career history, applications, CRM log, and uploads stay on your machine (`data/*.json`, `public/uploads/`, `public/documents/`). Typography ships offline via bundled `@fontsource` packages (`IBM Plex Sans`, `IBM Plex Serif`, `Plus Jakarta Sans`, `Inter`).
+- **Profession-Agnostic & Multi-Language Output**: Clean English studio UI supporting tailored document output in **English**, **German (DACH)**, and **Spanish**, complete with localized headings, date formatting, DIN 5008 business letter rules, and localized PDF outline bookmarks.
+- **3 ATS/Executive CV Templates + 3 Cover Letter Templates**:
+  - **CVs**: *ATS Clean* (`ats-clean`), *Modern Professional* (`modern-professional`), and *DACH Tabular* (`dach-tabular`) with optional 3:4 portrait framing.
+  - **Cover Letters**: *ATS Clean Letter* (`ats-letter`), *Editorial Sidebar* (`editorial-sidebar`), and *DIN 5008 Editorial* (`din-editorial`), plus a printable **STAR Interview Prep Guide**.
+- **AI Prompt Studio (4 Modes & Dynamic Master CV Highlights)**: Generates strict evidence-grounded prompts for any LLM (`Claude`, `Gemini`, `ChatGPT`) across four modes — **Full Application**, **Quick Triage**, **Outreach & Portal Q&A**, and **STAR Interview Prep** — dynamically deriving selectable achievement highlights from your own Master CV.
+- **Diff-Previewed JSON Import & Anti-AI Sanitizer**: Inspect section-by-section diffs before applying LLM output, undo any import in one click, strip robotic em-dashes/AI clichés, deduplicate bullets across sections, and audit every job requirement against verified quotes.
+- **Manual Job Search CRM & Daily Command Center**: Track daily application/follow-up targets, filter operational views (*Pending review*, *Ready to send*, *Stale drafts > 48h*, *No response > 5d*), inspect funnel analytics, log submissions/interviews/contacts in an audit log, and link each submission to the exact exported PDF revision.
+- **Master CV Manager & Multi-Page Portal PDF Export**: Maintain your complete career repository (including Deep Duty Pillars, Projects, Applied Methodologies, Work Authorization, and Interview Prep) and export comprehensive multi-page Master CV PDFs for job boards.
+- **Dynamic Local PDF Attachments & Tagged Bundle Compiler**: Drop your own reference letters, diplomas, or certificates into `public/documents/` to auto-discover, toggle per application, monitor the 2 MB ATS upload cap, and compile tagged multi-document PDFs in either **DACH** (`Cover Letter → CV → Attachments`) or **ATS** (`CV → Cover Letter → Attachments`) order.
+- **Atomic Storage & Verified Local Backups**: File-locked atomic writes (`proper-lockfile`), optimistic revision conflict recovery (`HTTP 409`), SHA-256 verified manual snapshots in `.local/backups`, full workspace JSON export, and orphaned-file cleanup.
 
-> 📚 **Want a deep dive into every module?** Read the complete [**FEATURE_GUIDE.md**](./FEATURE_GUIDE.md).
+> **Want a full tour of every screen and workflow?** Read [**FEATURE_GUIDE.md**](./FEATURE_GUIDE.md).
 
 ---
 
-## 🚀 Quick Start & Installation
+## Quick Start & Installation
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) version **20.x or higher** installed on your system.
+- [Node.js](https://nodejs.org/) **20.0.0 or higher**
 
-### Option A: 1-Click Installer (Windows)
-1. Double-click `Install_Windows.bat` (installs dependencies, seeds sample data, and installs Playwright Chromium).
-2. Double-click `Start_App.bat` to launch the studio.
-3. Your browser will automatically open [http://127.0.0.1:3000](http://127.0.0.1:3000).
+### Option A: 1-Click Launcher (Windows)
+1. Double-click `Install_Windows.bat` (installs dependencies, initializes sample data, and downloads Playwright Chromium).
+2. Double-click `Start_App.bat` to build and launch the studio.
+3. Your browser opens automatically at [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
-### Option B: 1-Click Installer (Linux / macOS)
+### Option B: 1-Click Launcher (macOS / Linux)
 ```bash
 chmod +x install.sh start.sh
 ./install.sh
 ./start.sh
 ```
 
-### Option C: Manual Installation
+### Option C: Manual CLI Setup
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Run initialization setup (seeds template data and installs Playwright Chromium)
+# 2. Seed local data templates, create runtime folders, and install Playwright Chromium
 npm run setup
 
-# 3. Start local development server
+# (Optional) Install Playwright Chromium separately if skipped or updated
+npm run install:chromium
+
+# 3. Build and launch in local production mode (auto-opens http://127.0.0.1:3000)
+npm run use
+
+# Or run the Next.js development server
 npm run dev
 ```
 
-Visit [http://127.0.0.1:3000](http://127.0.0.1:3000) in your web browser.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000) in your browser.
 
 ---
 
-## 📖 Concise User Guide: How to Use the Program (5-Step Workflow)
+## 5-Step Workflow
 
 ```
-   ┌───────────────────────────────────────────────────────────────┐
-   │ STEP 1: Master CV & Global Assets                             │
-   │ Configure your verified career history, 3:4 photo & signature │
-   └──────────────────────────────┬────────────────────────────────┘
-                                  ▼
-   ┌───────────────────────────────────────────────────────────────┐
-   │ STEP 2: AI Prompt Studio (5-Expert Committee)                 │
-   │ Select language, angle, tone, density & priority highlights   │
-   └──────────────────────────────┬────────────────────────────────┘
-                                  ▼
-   ┌───────────────────────────────────────────────────────────────┐
-   │ STEP 3: Generate Tailored JSON in Your LLM                    │
-   │ Paste the prompt into Gemini / Claude / ChatGPT               │
-   └──────────────────────────────┬────────────────────────────────┘
-                                  ▼
-   ┌───────────────────────────────────────────────────────────────┐
-   │ STEP 4: 1-Click JSON Import & Anti-AI Sanitization            │
-   │ Import JSON -> Auto-clean clichés -> Auto-fit A4 pagination   │
-   └──────────────────────────────┬────────────────────────────────┘
-                                  ▼
-   ┌───────────────────────────────────────────────────────────────┐
-   │ STEP 5: Live Split-Screen Review & Vector PDF Export          │
-   │ Fine-tune CV/Letter/STAR Prep, copy portal answers & export   │
-   └───────────────────────────────────────────────────────────────┘
+  1. Master CV & Assets   ──▶  Enter your verified career history, photo, signature & local PDFs
+            │
+            ▼
+  2. Prompt Studio        ──▶  Pick a mode (Triage / Full / Outreach / STAR), language & highlights
+            │
+            ▼
+  3. External LLM         ──▶  Run the copied prompt in Claude, Gemini, or ChatGPT (no API key needed)
+            │
+            ▼
+  4. Diff-Checked Import  ──▶  Inspect section diffs, sanitize clichés & verify ATS evidence coverage
+            │
+            ▼
+  5. Export & CRM Log     ──▶  Export tagged vector PDFs/bundles & log submission + follow-up in CRM
 ```
 
-### Step 1: Configure Your Master CV & Global Assets
-1. On the **Dashboard (`/`)**, click **`Edit Master`** inside the *Master CV* card.
-2. Fill in your verified contact details, headline variants, achievements library, categorized skills, chronological work experience, and projects, then click **`Save Master Data`**.
-3. Back on the Dashboard under **Default Assets**:
-   - Upload your **Profile Photo** (rendered automatically as a balanced **3:4 Executive Portrait**) and toggle the checkbox to enable it by default.
-   - Upload a transparent **Handwritten Signature** or click **`✏️ Or Draw Signature In-App`** to sign directly on the canvas.
+### 1. Set Up Your Master CV & Local Assets
+- Open **Master CV (`/master-cv`)** and fill in your personal details, **Work Authorization**, accepted work modes, professional links, languages, headline/summary variants, **Achievements Pool**, **Skills Pool**, **Experience History** (with optional **Deep Duty Pillars**), **Projects**, **Education**, **Certifications & Applied Methodologies**, and **Interview Prep**.
+- On the **Dashboard (`/`)**, expand **Profile, Default Assets & Local Backups** to upload a default **3:4 Profile Photo** and upload or draw a transparent **Handwritten Signature**.
+- *(Optional)* Drop any reference letters, diplomas, or certificates (`.pdf`) into `public/documents/`. The studio automatically discovers them with zero manual configuration.
 
-### Step 2: Generate a Tailored Prompt in the AI Prompt Studio
-1. Click **`AI Prompt Studio`** in the top navigation bar (or **`Prompt Builder`** inside any draft).
-2. Configure the **5-Expert Committee** parameters for your target job:
-   - **Output Language**: `Auto-detect`, `English`, `Deutsch (DACH)`, or `Español`.
-   - **Primary Positioning Angle**: Choose the domain lens that best fits the role (e.g., *AI Agents & Automation*, *Business Process & BPMN 2.0*, *Lean Six Sigma Steering*, *Technical Operations & Jira*, or *Regulatory Governance*).
-   - **Seniority & Tone Calibration**: Select *Hands-On Builder*, *Internal Consultant*, or *Executive Operations*.
-   - **Target CV Density**: Choose *Executive 2-Page (Recommended)*, *Ultra-Compact 1-Page*, or *Comprehensive Technical*.
-   - **Priority Career Highlights**: Toggle **2 to 5 core milestones** you want the LLM to emphasize.
-3. Paste the target **Job Description** into field #7 and click **`Copy Personalized Prompt`**.
+### 2. Build an Evidence-Grounded Prompt
+- Click **Prompt Studio** in the top navigation bar (or inside any application).
+- Paste the job posting, optionally save it to your **Offer Preparations** queue, and select:
+  - **Prompt Mode**: *Full Application*, *Quick Triage*, *Outreach & Portal Q&A*, or *STAR Interview Prep*
+  - **Output Language**: *Auto-detect*, *English*, *German*, or *Spanish* (plus optional German `Sie`/`Du` addressing)
+  - **Positioning Angle**, **Tone Preset**, **Target CV Length** (`330–380w`, `400–520w`, or `460–600w`), and **Priority Highlights** derived directly from your own Master CV achievements.
+- Click **Copy Prompt** and run it in your preferred LLM.
 
-### Step 3: Run the Prompt in Gemini, Claude, or ChatGPT
-1. Paste the copied prompt into your preferred LLM (e.g., Gemini 2.5 Pro, Claude 3.7 Sonnet, or GPT-4o).
-2. The LLM will analyze the job posting against your Master CV and output a single RFC 8259 `.json` block containing your tailored CV, DIN 5008 Cover Letter, ATS Keyword Strategy, Fit Score, Recruiter Objection Neutralizers, Portal Form Answers, and STAR Interview Guide.
+### 3. Import with Section-by-Section Diff Preview
+- Click **New Application → Import JSON** on the Dashboard (or **Import JSON** inside an existing draft).
+- Paste the LLM JSON or upload a `.json` file. Review the validation preview and section diffs before confirming.
+- The import pipeline archives the raw JSON (`data/imports/`), strips AI buzzwords and em-dashes, removes cross-section bullet duplication, and allows 1-click **Undo Import**.
 
-### Step 4: Import the Tailored JSON Draft
-1. On the Dashboard, click **`+ New Application`** → switch to the **`Import JSON`** tab (or click **`Import JSON`** inside an existing draft).
-2. Upload the `.json` file or paste the JSON string directly.
-3. Review the instant validation preview (*Company*, *Role*, *Fit Score / 10*, *Recommended Positioning*) and click **`Import & Create`**.
-4. The studio automatically normalizes the schema, strips AI buzzwords/em-dashes, removes duplicate bullets, and applies Smart A4 Auto-Fit.
+### 4. Refine in the Split-Screen A4 Editor
+- Use the 10 structured editor tabs (*Profile*, *Experience*, *Projects*, *Skills*, *Cover Letter*, *Strategy*, *Form Answers*, *Tracking*, *ATS Audit*, *Layout & Assets*) alongside a live paginated A4 preview.
+- Run **Final Review** before exporting to catch missing contact details, placeholder remnants, language mismatches, page overflows, unverified claims, or bundles exceeding 2 MB.
 
-### Step 5: Fine-Tune, Copy Portal Answers & Export Vector PDFs
-Inside the **Split-Screen Application Editor (`/applications/[id]`)**:
-- **Use the Top Readiness Toolbar**:
-  - Check your **Word Count Badge** (`330–460w Ideal`) and **Bullet Conciseness**.
-  - Click **`🧹 Clean AI`** if any AI buzzwords are flagged, or **`✨ Auto-Fit`** to automatically balance A4 typography.
-  - Toggle **`Achievements: ON/OFF`** or **`Projects: ON/OFF`** on the fly.
-- **Customize Layout & Portrait Framing (`Layout & Assets` tab)**:
-  - Switch between **ATS Clean** and **Modern Professional** CV templates, or **ASR Sidebar** and **ATS Letter** cover letter templates.
-  - Choose your **Portrait Frame Style**: *Executive Portrait 3:4 (Recommended)*, *Modern Squircle (1:1)*, or *Studio Circle (1:1)*.
-- **Speed Through Portal Applications (`📝 Form Answers` & `🔍 ATS Scanner` tabs)**:
-  - Use 1-click **`Copy Plain Text`** buttons for *Why this Role?*, *Why this Company?*, *Short Motivation*, and *Salary Positioning*.
-  - Paste the job ad in **`🔍 ATS Scanner`** to verify your keyword match percentage (`0%–100%`).
-- **Export Print-Ready PDFs (`Export PDF` dropdown)**:
-  - Download individual **CV**, **Cover Letter**, or **STAR Interview Prep** PDFs.
-  - Or choose **`Full Application Bundle`** under *Merged Bundles* to compile `Cover Letter + CV + References/Certificates` (`public/documents/references.pdf`) into a single unified PDF named `Candidate_Name_Application_Bundle_Company.pdf`.
+### 5. Export Vector PDFs & Track in the CRM
+- Use **Export PDF** to generate vector A4 PDFs via Headless Chromium: individual *CV*, *Cover Letter*, *STAR Prep*, *Attachments*, or merged bundles (*CV + Attachments*, *Cover Letter + Attachments*, *Full Application Bundle*).
+- Click **Already submitted? Log submission & follow-up** to record the exact exported delivery revision, submission date, contact, and next follow-up action in your local CRM.
 
 ---
 
-## 🔒 Security & Privacy by Design
+## Useful Commands
 
-- **Path Traversal Protection**: All filesystem reads and writes enforce canonical directory boundary checks.
-- **SSRF & Local File Isolation**: Playwright Chromium exports strictly block non-HTTP internal protocols (`file://`, `javascript:`).
-- **Strict Content Security Policy (CSP)**: Hardened headers with `default-src 'self'`, `frame-ancestors 'none'`, and secure MIME type sniffing prevention.
-- **Safe File Uploads**: Image uploads are restricted to 5MB and validated against magic byte signatures (`image/png`, `image/jpeg`, `image/webp`).
-- **No Telemetry**: Zero external tracking scripts or analytics.
+| Command | Description |
+| :--- | :--- |
+| `npm run setup` | Seeds `data/*.json` from templates, creates local directories, and installs Chromium |
+| `npm run install:chromium` | Installs Playwright Chromium for headless vector PDF compilation |
+| `npm run use` | Builds the production app and starts it on `http://127.0.0.1:3000` (auto-opens browser) |
+| `npm run dev` | Starts the local development server on `http://127.0.0.1:3000` |
+| `npm run backup` | Creates, verifies (`--verify`), or restores (`--restore`) SHA-256 verified workspace snapshots |
+| `npm run typecheck` | Runs strict TypeScript type-checking (`tsc --noEmit`) |
+| `npm run test` | Runs the unit & integration test suite (`node --test`) |
+| `npm run test:security` | Runs security and PDF isolation tests |
+| `npm run check:pii` | Scans tracked and untracked files to verify zero personal data leaks |
 
 ---
 
-## 📂 Project Structure
+## Security & Privacy by Design
+
+- **Localhost-Only Architecture**: Binds to `127.0.0.1:3000` with strict Origin/Host request guards on every API route.
+- **Path Traversal & Symlink Protection**: All disk reads, writes, reference attachment lookups, and backup restores enforce canonical boundary and symlink checks.
+- **Playwright SSRF & Protocol Isolation**: PDF rendering blocks external network requests and dangerous protocols (`file://`, `javascript:`), serving only bundled offline assets.
+- **Hardened HTTP Headers**: Strict Content Security Policy (`default-src 'self'`, `frame-ancestors 'none'`) and MIME-sniffing protection.
+- **Magic-Byte Upload Validation**: Profile photos and signatures are capped at 5 MB and verified by binary file headers (`PNG`, `JPEG`, `WEBP`).
+
+---
+
+## Project Structure
 
 ```
 job-application-studio/
 ├── data/
-│   ├── master-cv.example.json      # Sample candidate profile template
-│   └── applications.example.json   # Sample application entry
+│   ├── master-cv.example.json       # Neutral example Master CV template
+│   └── applications.example.json    # Neutral example application template
 ├── public/
-│   ├── documents/                  # Stored reference PDFs for bundle merging
-│   └── uploads/                    # Local user profile photos and signatures
+│   ├── documents/                   # Drop your local reference/certificate PDFs here
+│   └── uploads/                     # Local profile photos and signatures (gitignored)
 ├── scripts/
-│   └── setup.mjs                   # Automated environment & Chromium setup
+│   ├── setup.mjs                    # Local environment & Playwright Chromium initializer
+│   ├── use-local.mjs                # Production build & local browser launcher
+│   ├── data-backup.mjs              # SHA-256 verified backup, verify & restore CLI
+│   └── check-pii-leak.mjs           # Automated zero-PII privacy scanner
 ├── src/
-│   ├── app/                        # Next.js App Router pages and API routes
-│   │   ├── api/
-│   │   │   ├── applications/       # CRUD endpoints for applications
-│   │   │   ├── export-pdf/         # Singleton Headless Chromium PDF renderer
-│   │   │   ├── master-cv/          # Master candidate profile storage
-│   │   │   ├── merge-pdf/          # Multi-document PDF compiler (pdf-lib)
-│   │   │   └── upload/             # Magic-byte validated asset upload handler
-│   │   ├── applications/[id]/      # Split-screen application editor & A4 preview
-│   │   ├── master-cv/              # Master candidate profile manager
-│   │   └── page.tsx                # Applications Dashboard & Pipeline KPIs
+│   ├── app/
+│   │   ├── api/                     # Local API routes (applications, master-cv, crm,
+│   │   │                            # preparations, references, export-pdf, merge-pdf,
+│   │   │                            # backup, imports, intake, upload, uploads)
+│   │   ├── applications/[id]/       # Split-screen A4 application editor
+│   │   ├── master-cv/               # Master CV manager & multi-page PDF exporter
+│   │   └── page.tsx                 # Dashboard, CRM command center & funnel analytics
 │   ├── components/
-│   │   ├── templates/              # ATS Clean, Modern, DIN 5008 Sidebar & STAR templates
-│   │   ├── PromptGeneratorModal.tsx# 5-Expert AI Master Prompt Customization Studio
-│   │   └── SignaturePad.tsx        # HTML5 Canvas signature drawing pad
-│   └── lib/
-│       ├── aiJsonMapper.ts         # Anti-AI sanitizer, deduplicator & schema mapper
-│       ├── promptBuilder.ts        # 5-Expert LLM prompt orchestrator
-│       ├── schemas.ts              # Strict Zod validation schemas
-│       └── storage.ts              # Hardened local file-storage engine
-├── FEATURE_GUIDE.md                # Comprehensive guide to every studio feature
-├── next.config.ts                  # CSP and HTTP security headers
-├── package.json                    # Dependencies & scripts
-└── tsconfig.json                   # TypeScript configuration
+│   │   ├── crm/                     # CRM Dashboard & Activity/Submission dialog
+│   │   ├── editor/                  # 10 editor tabs, A4 paginator, Final Review, Cleanup
+│   │   ├── master-cv/               # Master CV multi-page PDF configuration & preview
+│   │   ├── templates/               # 3 CV templates, 3 Cover Letter templates, STAR Prep
+│   │   ├── ImportPreviewPanel.tsx   # JSON validation & section diff viewer
+│   │   ├── PromptGeneratorModal.tsx # 4-mode AI Prompt Studio
+│   │   └── SignaturePad.tsx         # High-DPI HTML5 Canvas signature pad
+│   └── lib/                         # Schemas, prompt builder, AI sanitizer, ATS auditor,
+│                                    # PDF/merge engine, CRM engine, atomic storage
+├── FEATURE_GUIDE.md                 # Detailed walkthrough of every module
+├── next.config.ts                   # CSP and HTTP security headers
+└── package.json                     # Dependencies and npm scripts
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router, React 19)
 - **Language**: [TypeScript 5](https://www.typescriptlang.org/)
 - **Validation**: [Zod 4](https://zod.dev/)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) & [Lucide React](https://lucide.dev/)
+- **Offline Fonts**: `@fontsource/ibm-plex-sans`, `@fontsource/ibm-plex-serif`, `@fontsource/plus-jakarta-sans`, `@fontsource/inter`
 - **PDF Engine**: [Playwright](https://playwright.dev/) (Headless Chromium) & [pdf-lib](https://pdf-lib.js.org/)
+- **File Locking**: [proper-lockfile](https://github.com/moxystudio/node-proper-lockfile)
 
 ---
 
-## 📄 License
+## License
 
-This project is open-source under the [MIT License](LICENSE).
+Open-source under the [MIT License](LICENSE).

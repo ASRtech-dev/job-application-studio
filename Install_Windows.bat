@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title Job Application Studio - Windows Installer
 echo ========================================================
 echo   Job Application Studio - Installation Setup
@@ -15,7 +16,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/2] Installing dependencies...
-call npm install
+call npm.cmd install
 if %errorlevel% neq 0 (
   echo [ERROR] npm install failed.
   pause
@@ -24,7 +25,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [2/2] Running setup and Playwright browser installation...
-call npm run setup
+call npm.cmd run setup
 if %errorlevel% neq 0 (
   echo [ERROR] Setup script failed.
   pause

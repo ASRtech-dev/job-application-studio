@@ -1,10 +1,11 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { X, RotateCcw, Check, PenTool } from "lucide-react";
+import { useDialogFocus } from "../lib/useDialogFocus";
 
 interface SignaturePadProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (blob: Blob) => void;
+  onSave: (blob: Blob) => void | Promise<unknown>;
 }
 
 export default function SignaturePad({ isOpen, onClose, onSave }: SignaturePadProps) {
@@ -12,63 +13,73 @@ export default function SignaturePad({ isOpen, onClose, onSave }: SignaturePadPr
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Initial canvas sizes and scale for HDPI screens
-  useEffect(() => {
-    if (!isOpen || !canvasRef.current) return;
-    
+  useDialogFocus(containerRef, isOpen, onClose);
+
+  const setupCanvasSize = useCallback((preserveExisting: boolean) => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set layout dimensions based on actual client container width
     const rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
     const dpr = window.devicePixelRatio || 1;
-    
-    canvas.width = rect.width * dpr;
-    canvas.height = 200 * dpr;
-    ctx.scale(dpr, dpr);
-    
-    // Smooth drawing parameters
-    ctx.strokeStyle = "#10233f"; // Navy ink
+    let snapshot: HTMLCanvasElement | null = null;
+    if (preserveExisting && canvas.width > 0 && canvas.height > 0) {
+      snapshot = document.createElement("canvas");
+      snapshot.width = canvas.width;
+      snapshot.height = canvas.height;
+      snapshot.getContext("2d")?.drawImage(canvas, 0, 0);
+    }
+
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(200 * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.strokeStyle = "#10233f";
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, rect.width, rect.height);
-    setHasDrawn(false);
-  }, [isOpen]);
 
-  const getCoordinates = (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
+    if (snapshot) {
+      ctx.drawImage(snapshot, 0, 0, rect.width, 200);
+    } else {
+      ctx.clearRect(0, 0, rect.width, 200);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const frame = requestAnimationFrame(() => {
+      setupCanvasSize(false);
+      setHasDrawn(false);
+      setSaving(false);
+    });
+    const canvas = canvasRef.current;
+    const observer = typeof ResizeObserver === "function" && canvas
+      ? new ResizeObserver(() => setupCanvasSize(true))
+      : null;
+    if (observer && canvas) observer.observe(canvas);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, [isOpen, setupCanvasSize]);
+
+  const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    
     const rect = canvas.getBoundingClientRect();
-    
-    if ("touches" in e) {
-      if (e.touches.length === 0) return null;
-      const touch = e.touches[0];
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-    } else {
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    e.currentTarget.setPointerCapture(e.pointerId);
     const coords = getCoordinates(e);
-    if (!coords) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx) return;
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!coords || !ctx) return;
 
     ctx.beginPath();
     ctx.moveTo(coords.x, coords.y);
@@ -76,22 +87,19 @@ export default function SignaturePad({ isOpen, onClose, onSave }: SignaturePadPr
     setHasDrawn(true);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-    e.preventDefault();
-    
     const coords = getCoordinates(e);
-    if (!coords) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx) return;
-
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!coords || !ctx) return;
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
+  const stopDrawing = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e?.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     setIsDrawing(false);
   };
 
@@ -99,7 +107,6 @@ export default function SignaturePad({ isOpen, onClose, onSave }: SignaturePadPr
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    
     const rect = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
     setHasDrawn(false);
@@ -107,11 +114,13 @@ export default function SignaturePad({ isOpen, onClose, onSave }: SignaturePadPr
 
   const handleSave = () => {
     const canvas = canvasRef.current;
-    if (!canvas || !hasDrawn) return;
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        onSave(blob);
+    if (!canvas || !hasDrawn || saving) return;
+    setSaving(true);
+    canvas.toBlob(async (blob) => {
+      try {
+        if (blob) await onSave(blob);
+      } finally {
+        setSaving(false);
       }
     }, "image/png");
   };
@@ -120,74 +129,66 @@ export default function SignaturePad({ isOpen, onClose, onSave }: SignaturePadPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div 
+      <div
         ref={containerRef}
-        className="w-full max-w-lg rounded-2xl border border-[#1f2937] bg-[#0e162d] p-6 shadow-2xl relative overflow-hidden"
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="signature-dialog-title"
+        className="ui-panel ui-controls w-full max-w-lg p-4 sm:p-6 relative overflow-hidden"
       >
-        <div className="absolute -left-16 -top-16 w-32 h-32 bg-[#6d8ead]/15 rounded-full blur-2xl"></div>
-        
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <PenTool className="w-4 h-4 text-[#6d8ead]" /> Draw Your Signature
+          <h3 id="signature-dialog-title" className="text-base font-bold text-white flex items-center gap-2">
+            <PenTool className="w-4 h-4 text-blue-300" /> Draw your signature
           </h3>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white bg-[#10233f]/40">
+          <button type="button" aria-label="Close signature pad" onClick={onClose} className="ui-button ui-button--quiet">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <p className="text-xs text-[#6b7280] mb-4">
-          Use your mouse, trackpad, or touchscreen to sign inside the baseline grid below.
+        <p className="text-xs text-slate-300 mb-4">
+          Sign above the line using your mouse, trackpad, or touchscreen.
         </p>
 
-        {/* Drawing Canvas */}
-        <div className="relative w-full h-[200px] bg-white rounded-xl border border-[#1f2937]/40 overflow-hidden select-none">
-          {/* Baseline guidelines */}
+        <div className="relative w-full h-[200px] bg-white rounded-xl border border-slate-300 overflow-hidden select-none">
           <div className="absolute inset-x-0 bottom-12 border-b border-dashed border-[#d8dee8] pointer-events-none flex justify-center">
-            <span className="text-[9px] text-[#9ca3af] -mt-4 bg-white/80 px-2 rounded">sign on the line</span>
+            <span className="text-xs text-slate-600 -mt-4 bg-white/80 px-2 rounded">sign above the line</span>
           </div>
 
           <canvas
             ref={canvasRef}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
+            onPointerDown={startDrawing}
+            onPointerMove={draw}
+            onPointerUp={stopDrawing}
+            onPointerCancel={stopDrawing}
             className="w-full h-full cursor-crosshair touch-none"
           />
         </div>
 
-        <div className="flex justify-between items-center mt-6">
+        <div className="flex flex-wrap justify-between items-center gap-2 mt-6">
           <button
             type="button"
             onClick={clearCanvas}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#10233f]/50 hover:bg-[#10233f] text-[#6d8ead] border border-[#6d8ead]/10 font-semibold text-xs transition-all"
-            disabled={!hasDrawn}
+            className="ui-button ui-button--secondary"
+            disabled={!hasDrawn || saving}
           >
             <RotateCcw className="w-3.5 h-3.5" /> Clear
           </button>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-transparent hover:bg-[#1f2937]/20 text-[#6b7280] font-semibold text-xs transition-all"
-            >
+            <button type="button" onClick={onClose} className="ui-button ui-button--quiet">
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              disabled={!hasDrawn}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#10233f] to-[#1d3d6b] hover:from-[#152d50] hover:to-[#244e88] text-white font-semibold text-xs shadow-md transition-all active:scale-95 disabled:opacity-40"
+              disabled={!hasDrawn || saving}
+              className="ui-button ui-button--primary"
             >
-              <Check className="w-4 h-4" /> Save Signature
+              <Check className="w-4 h-4" /> {saving ? "Saving…" : "Save signature"}
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,194 +1,222 @@
-# Job Application Studio — Complete Feature Guide
+# Job Application Studio v2.0 — Complete Feature Guide
 
-Welcome to **Job Application Studio**, a local-first, privacy-preserving career operations and document compilation studio built with **Next.js 16**, **React 19**, **Tailwind CSS 4**, **Playwright Chromium**, and **pdf-lib**.
+Welcome to **Job Application Studio v2.0**, a 100% local, privacy-first career operations and document compilation workspace built with **Next.js 16**, **React 19**, **TypeScript 5**, **Tailwind CSS 4**, **Playwright Chromium**, and **pdf-lib**.
 
-This guide walks through every feature of the application, explaining what it does, why it matters to recruiters and Applicant Tracking Systems (ATS), and how to use it for maximum interview conversion.
+This guide walks through every module in the studio, explaining how each feature works and how it helps you produce accurate, ATS-parseable, recruiter-ready applications across any industry or country.
 
 ---
 
 ## Table of Contents
 
-1. [Applications Dashboard & Pipeline KPIs](#1-applications-dashboard--pipeline-kpis)
-2. [Master CV Manager (`/master-cv`)](#2-master-cv-manager-master-cv)
-3. [Global Assets: Executive Portrait (3:4) & Handwritten Signature Pad](#3-global-assets-executive-portrait-34--handwritten-signature-pad)
-4. [AI Prompt Customization Studio (5-Expert Committee Engine)](#4-ai-prompt-customization-studio-5-expert-committee-engine)
-5. [Tailored JSON Importer, Normalizer & Anti-AI Sanitizer](#5-tailored-json-importer-normalizer--anti-ai-sanitizer)
+1. [Dashboard, Funnel Analytics & Manual Job Search CRM](#1-dashboard-funnel-analytics--manual-job-search-crm)
+2. [Master CV Manager & Multi-Page Portal PDF Export](#2-master-cv-manager--multi-page-portal-pdf-export)
+3. [Global Assets: 3:4 Executive Portrait & Handwritten Signature Pad](#3-global-assets-34-executive-portrait--handwritten-signature-pad)
+4. [AI Prompt Studio (4 Modes & Dynamic Master CV Highlights)](#4-ai-prompt-studio-4-modes--dynamic-master-cv-highlights)
+5. [Diff-Checked JSON Import & Anti-AI Sanitization](#5-diff-checked-json-import--anti-ai-sanitization)
 6. [Split-Screen Live Document Editor (`/applications/[id]`)](#6-split-screen-live-document-editor-applicationsid)
-7. [Berlin & DACH Readiness Toolbar (Live Quality Telemetry)](#7-berlin--dach-readiness-toolbar-live-quality-telemetry)
-8. [Document Templates: ATS Clean, Modern Professional, DIN 5008 Sidebar & STAR Prep](#8-document-templates-ats-clean-modern-professional-din-5008-sidebar--star-prep)
-9. [Candidature Strategy, Objection Handling & Portal Form Answers](#9-candidature-strategy-objection-handling--portal-form-answers)
-10. [ATS Keyword Compatibility Scanner & Job Pipeline Tracker](#10-ats-keyword-compatibility-scanner--job-pipeline-tracker)
-11. [Vector PDF Compiler & Multi-Document Bewerbungsmappe Merger](#11-vector-pdf-compiler--multi-document-bewerbungsmappe-merger)
+7. [Readiness Toolbar, Text Cleanup & Pre-Send Final Review](#7-readiness-toolbar-text-cleanup--pre-send-final-review)
+8. [Document Templates & Offline `@fontsource` Typography](#8-document-templates--offline-fontsource-typography)
+9. [Strategy, Objection Neutralizers, Outreach & Portal Form Answers](#9-strategy-objection-neutralizers-outreach--portal-form-answers)
+10. [ATS Evidence Audit & Keyword Coverage](#10-ats-evidence-audit--keyword-coverage)
+11. [Dynamic Local PDF Attachments & Tagged Bundle Compiler](#11-dynamic-local-pdf-attachments--tagged-bundle-compiler)
+12. [Atomic Storage, Conflict Recovery & Verified Local Backups](#12-atomic-storage-conflict-recovery--verified-local-backups)
 
 ---
 
-## 1. Applications Dashboard & Pipeline KPIs
+## 1. Dashboard, Funnel Analytics & Manual Job Search CRM
 
-The **Dashboard (`/`)** is your central command center for managing every job application from initial draft to final offer.
+The **Dashboard (`/`)** unifies your daily job-search command center with your full application pipeline.
 
-### Key Capabilities:
-- **Interactive Pipeline KPI Cards**: Seven live status counters at the top of the dashboard (**Total**, **Drafts**, **Applied**, **Interviews**, **Offers**, **Rejected**, **Archived**). Clicking any card immediately filters the application grid to show only applications in that stage.
-- **Rich Application Cards**: Each card displays:
-  - Target **Language badge** (`English`, `German`, `Spanish`) and **Status badge**.
-  - **Role Title** and **Company Name** with last-modified date.
-  - Quick metadata pills for **Interview Date (`📅`)**, **Salary/Offer Range (`💰`)**, and **Recruiter Contact (`👤`)**.
-  - Quick actions to open the editor or delete the draft.
-- **Dual-Mode Application Creation (`+ New Application`)**:
-  - **Manual Entry**: Quickly spin up a new application pre-filled from your Master CV by entering Company Name, Role Title, and Target Language.
-  - **Import JSON**: Upload or paste a tailored `.json` file generated by your external LLM (Gemini, Claude, ChatGPT) with real-time schema validation and Fit Score preview before creation.
+### Manual Job Search CRM (`CrmDashboard` & `CrmActionDialog`)
+- **Daily Targets & Pace**: Set manual daily goals for applications submitted and follow-ups completed, without automated scraping or background jobs.
+- **Actionable Audit Log**: Record every submission, follow-up, recruiter reply, interview stage, and outcome as explicit dated events (with void/correction support so history stays auditable).
+- **Frozen Delivery Linkage**: When logging a submission, attach the exact exported PDF delivery record (revision number, filename, and timestamp) so you always know which CV/letter version a company received.
+- **Contact Directory**: Store recruiter and hiring-manager contacts locally and reuse them across follow-up actions.
+
+### Pipeline Filters, Operational Views & Funnel Strip
+- **Status Pills**: Filter across **All**, **Drafts**, **Reviewed**, **Applied**, **Interviewing**, **Offered**, **Rejected**, and **Archived**.
+- **Operational Views**: Surface stalled or unconfirmed items in one click:
+  - *Pending review*
+  - *Reviewed, not sent*
+  - *Sent without next action*
+  - *Sent without confirmed date*
+  - *Ready to send (Fit ≥ 7.5)*
+  - *Stale drafts > 48h*
+  - *Sent without contact*
+  - *No response > 5 days*
+- **Funnel Analytics Strip**: Live counters for **Applied (7d)**, **Confirmed submissions**, **Applications with contact**, **Interviews/Offers**, **Language breakdown** (`EN` / `DE` / `ES`), and **Duplicate company/role alerts**.
+- **Persistent Multi-Filtering & Sorting**: Search by company, role, location, or notes; filter by document language, role tier, or AI recommendation; sort by last edited, fit score, or company name — all persisted locally (`jas_dashboard_filters_v1`).
+
+### Dual-Mode Application Creation (`+ New Application`)
+- **Manual Entry**: Spin up a clean draft seeded from your Master CV by choosing Company Name, Role Title, and Document Language (`English`, `German`, or `Spanish`).
+- **Import JSON**: Paste or upload `.json` output from your external LLM. Full applications create new drafts; **Quick Triage** JSONs can be saved directly into your **Offer Preparations** queue without creating an empty CV; **Outreach** and **STAR Interview Prep** JSONs can merge cleanly into an existing application.
 
 ---
 
-## 2. Master CV Manager (`/master-cv`)
+## 2. Master CV Manager & Multi-Page Portal PDF Export
 
-Your **Master CV** (`data/master-cv.json`) is the single source of truth for your entire career history. Every new application and every AI Prompt draws its factual grounding from this repository.
+Your **Master CV (`/master-cv`, stored in `data/master-cv.json`)** is your single verified source of truth. Every new application and every AI prompt draws strictly from this repository.
 
-### Six Structured Data Tabs:
-1. **General & Contact**: Full Name, Location, Email, Phone, Availability Status, Languages (with CEFR levels), Education, Certifications, and Social/Portfolio Links (LinkedIn, GitHub).
-2. **Headline & Profiles**: Pre-configured positioning banners and executive summary variants tailored to different role families (e.g., *AI Workflow & Process Automation*, *Business Process & Operations Steering*, *Compliance & Governance*).
-3. **Achievements Library**: Verified, metric-backed career milestones (`achievementsPool`) ready to be injected into tailored CVs.
-4. **Core Skills Pool**: Categorized technical skills, platforms, and methodologies (`skillsPool`) organized into clean domain groups.
-5. **Experience Details**: Complete chronological employment history (`experienceHistory`) with role summaries and granular bullet libraries.
-6. **Projects Details**: Independent software, automation, and AI engineering projects (`projectsHistory`) with roles, dates, descriptions, and technical bullets.
+### Ten Structured Tabs
+1. **Profile & Contact**: Full Name, Location, Email, Phone, Availability, explicit **Work Authorization** (never inferred from location), accepted **Work Modes**, **Professional Links**, and **Languages**.
+2. **Headlines & Summaries**: Role-family headline and professional summary variants with live word counters (`≤ 65 words` target).
+3. **Achievements Pool**: Verified, metric-backed career milestones (`achievementsPool`) with word-count indicators (`≤ 28 words` target) and reordering controls. These achievements also power the dynamic priority highlight pills in Prompt Studio.
+4. **Skills Pool**: Categorized skill groups (`skillsPool`) with inline tag editing and reordering.
+5. **Experience**: Chronological employment history (`experienceHistory`) with per-role default inclusion toggles, role summaries, quantifiable bullets, and expandable **Deep Duty Pillars** (detailed responsibility catalogs used by Prompt Studio to ground tailored bullets without cluttering baseline drafts).
+6. **Projects**: Independent or cross-functional projects (`projectsHistory`) with role, dates, short description, tech stack, repository/demo URLs, and bullet points.
+7. **Education**: Degrees, diplomas, and formal training (`educationHistory`).
+8. **Certifications**: Official credentials (name, issuing authority, date, credential ID, validity) plus a separate **Applied Methodologies & Competencies** list (`specializedCompetencies`) to represent unaccredited frameworks honestly.
+9. **Interview Prep**: Reusable career narrative summary, structured **STAR Stories**, interviewer questions, and quick call reference notes.
+10. **Master CV PDF**: Dedicated multi-page **Master CV PDF Panel** (`MasterCvPdfPanel`) to configure language, template, typography, accent color, photo toggle, and section inclusion — ideal for exporting a comprehensive multi-page CV for job boards and recruiter databases.
 
 ---
 
-## 3. Global Assets: Executive Portrait (3:4) & Handwritten Signature Pad
+## 3. Global Assets: 3:4 Executive Portrait & Handwritten Signature Pad
 
-Located in the left column of the Dashboard (and customizable per application under **Layout & Assets**):
+Expand **Profile, Default Assets & Local Backups** on the Dashboard (or open **Layout & Assets** inside any application):
 
-### DACH 3:4 Executive Portrait (`Profile Photo`)
-- **Designed by an Executive CV Design Committee**: Instead of a generic social-media circular avatar that cuts into shoulders and looks informal on executive resumes, Job Application Studio renders a **3:4 Vertical Executive Portrait (`portrait-rectangle`)** inspired by DACH *Bewerbungsfoto* and European leadership standards.
-- **Visual Architecture**:
-  - **3:4 Aspect Ratio (`78px × 100px` in ATS Clean / `82px × 106px` in Modern Professional)** aligned with the header typography block.
-  - **Gallery Inner Mat**: `2.5px` crisp white inner passepartout frame (`padding: 2.5px`) with a subtle `1px solid #cbd5e1` border and a `2.5px` top accent bar matching your chosen theme color.
-  - **Optical Headroom Calibration**: Uses `object-fit: cover` with `object-position: center 16%` so head-and-shoulders portraits sit naturally on the golden ratio without awkward cropping.
-  - **Flexible Styles**: You can switch between **Executive Portrait 3:4 (Recommended)**, **Modern Squircle (1:1)**, and **Studio Circle (1:1)**, or toggle the photo `ON/OFF` with one click depending on regional norms (e.g., `ON` for DACH/EU, `OFF` for US/UK strict no-photo policies).
+### Profile Photo (Optional 3:4 Portrait)
+- Supports `PNG`, `JPG`, and `WEBP` up to 5 MB (verified via magic-byte headers on upload).
+- Renders cleanly in three frame styles: **Executive Portrait (3:4)**, **Modern Squircle (1:1)**, and **Studio Circle (1:1)**, with adjustable width and placement (*Right*, *Left*, or *Centered*).
+- Can be toggled `ON` or `OFF` globally or per application depending on regional conventions (e.g., enabled for DACH/European markets, disabled for US/UK no-photo norms).
 
 ### Handwritten Signature & In-App Drawing Pad
-- Upload a transparent `.png` signature or click **`✏️ Or Draw Signature In-App`** to open the high-DPI HTML5 **Signature Pad** (`SignaturePad.tsx`).
-- Renders in deep navy ink (`#10233f`) with smooth bezier stroke interpolation and exports a transparent PNG directly into your Cover Letter closing block.
+- Upload a transparent signature image or click **Draw Signature In-App** to open the high-DPI HTML5 **Signature Pad** (`SignaturePad.tsx`).
+- Smooth vector-like stroke interpolation exports a crisp transparent PNG for your cover letter closing block, with customizable width and alignment (*Left*, *Center*, *Right*).
 
 ---
 
-## 4. AI Prompt Customization Studio (5-Expert Committee Engine)
+## 4. AI Prompt Studio (4 Modes & Dynamic Master CV Highlights)
 
-Accessible from the top navbar (**`AI Prompt Studio`** on the Dashboard or **`Prompt Builder`** inside any application editor), this modal (`PromptGeneratorModal.tsx` + `promptBuilder.ts`) constructs a comprehensive, multi-stage system prompt for external LLMs (Gemini 2.5 Pro, Claude 3.7 Sonnet, GPT-4o).
+Open **Prompt Studio** from the Dashboard or any application editor (`PromptGeneratorModal.tsx` + `src/lib/promptBuilder.ts`). No LLM API keys are stored or required — the studio builds an evidence-grounded prompt you copy into **Claude**, **Gemini**, or **ChatGPT**.
 
-### Customization Controls:
-1. **Output Language**: `Auto-detect from Job Description`, `English`, `German (authentic DACH business style)`, or `Spanish`.
-2. **Primary Positioning Angle**:
-   - *Auto-Detect Best Angle*
-   - *AI Agents, LLM Orchestration & n8n/Make Automation*
-   - *Business Process Analyst, BPMN 2.0 & Operational Excellence*
-   - *Business Steering, Lean Six Sigma & KPI Governance*
-   - *Technical Operations, Jira/Salesforce & Incident Bridging*
-   - *EU AI Act, Regulatory Compliance & Risk Governance*
-3. **Seniority & Tone Calibration**:
-   - *Auto-Calibrate*, *Hands-On Builder & Technical Operator*, *Internal Consultant & Process Architect*, or *Executive Operations & Strategic Steering*.
-4. **Target CV Density**:
-   - *Executive 2-Page (360–440 words, Recommended)*
-   - *Ultra-Compact 1-Page (280–340 words)*
-   - *Comprehensive Technical (420–480 words)*
-5. **Interactive Career Highlights & Competencies Selector**:
-   - 10 toggleable competency pills (*AI Agents & RAG Pipelines*, *BPMN 2.0 & SOP Repositories*, *Advanced n8n & Make*, *CRM Queue Architecture*, *Lean Six Sigma Data Auditing*, *EU AI Act & Regulatory Governance*, *End-to-End Product Shipping*, *Internal Process Consulting*, *Jira Engineering-Stakeholder Bridge*, *Open-Source GitHub Portfolio*).
-   - Pick the exact 2–5 achievements most relevant to the job ad to force the LLM to prioritize them in the Profile, Key Achievements, Experience bullets, and Cover Letter.
-6. **Custom Instructions / Context Override**:
-   - Free-text box for special directives (e.g., *"Emphasize B2B SaaS onboarding"*, *"Address salary expectation of €68,000"*).
-7. **Live Prompt Preview & 1-Click Copy**:
-   - View the exact character/word count and inspect or copy the full prompt with one click.
+### Four Tailored Prompt Modes
+1. **Full Application (`full_application`)**: Generates a complete tailored CV, localized Cover Letter, requirement-by-requirement ATS evidence analysis, fit assessment, salary positioning, recruiter objection neutralizers, portal form answers, and optional STAR interview prep.
+2. **Quick Triage (`triage_only`)**: Fast fit/gap assessment to decide whether a posting is worth a full tailored application; results can be saved directly to **Offer Preparations** without creating a draft.
+3. **Outreach & Portal Q&A (`outreach_only`)**: Generates concise recruiter/hiring-manager outreach notes, follow-up templates, and tailored answers to specific screening questions.
+4. **STAR Interview Prep (`interview_prep`)**: Builds role-specific pitches, grounded STAR story cards, objection scripts, and smart interviewer questions.
+
+### Customization Controls
+- **Output Language**: `Auto-detect`, `English`, `German`, or `Spanish` — plus optional German addressing mode (`Auto`, formal `Sie`, or informal `Du`).
+- **Positioning Angle**: `Auto`, `Technical Execution`, `Strategy & Leadership`, `Operations & Delivery`, `Client & Stakeholder`, or `Governance & Compliance`.
+- **Tone Preset**: `Auto`, `Startup / Modern`, `Enterprise / Formal`, or `Technical / Direct`.
+- **Target CV Density**:
+  - *Ultra-Compact* (`330–380 words · 1 page`)
+  - *Clean Executive* (`400–520 words · 1–2 pages`, default)
+  - *Comprehensive* (`460–600 words · 2 pages`)
+- **Dynamic Priority Highlights**: Automatically generated from your Master CV's `achievementsPool` (zero hardcoded personal examples). Toggle the exact milestones you want the LLM to prioritize.
+- **Offer Preparations Queue & Duplicate Detection**: Save multiple job postings with posting URL, job ID, deadline, and salary hint; the studio warns (without blocking) if a posting URL, job ID, or job description matches an existing application.
+- **Strict Grounding Guardrails**: Every prompt wraps your Master CV and job posting in escaped data blocks and forbids fabricated employers, metrics, credentials, or work authorization claims.
 
 ---
 
-## 5. Tailored JSON Importer, Normalizer & Anti-AI Sanitizer
+## 5. Diff-Checked JSON Import & Anti-AI Sanitization
 
-When your external LLM returns the tailored JSON package, paste or upload it via **Import JSON**. Behind the scenes, `src/lib/aiJsonMapper.ts` runs a multi-layer pipeline:
+When importing LLM JSON via **New Application → Import JSON** or the editor's **Import JSON** modal (`src/lib/importPreview.ts` + `src/lib/aiJsonMapper.ts`):
 
-- **Multi-Schema Normalization (`normalizeImportedAIJson`)**: Automatically maps both nested v2 committee outputs (`tailoredCV`, `coverLetter`, `interviewPrep`) and flat legacy JSON structures into the strict Zod `ApplicationSchema`.
-- **Anti-AI Cliché & Punctuation Sanitizer (`sanitizeHumanText`)**:
-  - Automatically strips robotic em-dashes (`—` / `–`) used as dramatic sentence separators and replaces them with clean human punctuation.
-  - Replaces detectable AI buzzwords (*"delve into"*, *"testament to"*, *"tapestry"*, *"spearheaded"*, *"synergies"*, *"leveraging"*, *"pivotal"*, etc.) with natural, concrete operational English/German/Spanish equivalents.
-- **Anti-Duplication Filter (`deduplicateAchievementsAgainstBullets`)**:
-  - Computes token Jaccard similarity between `keyAchievements` and `experience.bullets`. If an achievement is >58% identical to an experience bullet, it is automatically deduplicated or backfilled so recruiters never read the same sentence twice on Page 1.
-- **DIN 5008 Subject Line Stripping**: Ensures the Cover Letter opening paragraph never repeats the `Subject Line / Betreffzeile`.
+- **Section-by-Section Diff Preview**: Before modifying your draft, `ImportPreviewPanel` shows validation results, detected mode, fit summary, and exact field-level changes.
+- **Raw Import Archival & 1-Click Undo**: Every accepted import is archived untouched in `data/imports/<runId>.json`, and an **Undo Import** button remains available in the editor header until you make manual edits.
+- **Anti-AI Cliché & Punctuation Sanitizer**: Flags and cleans robotic em-dash separators and overused AI clichés across English, German, and Spanish.
+- **Cross-Section Deduplication**: Measures token overlap between `Key Achievements` and `Experience` bullets so recruiters never read near-identical claims twice.
+- **DIN 5008 Subject Deduplication**: Ensures the cover letter opening never repeats the subject line.
 
 ---
 
 ## 6. Split-Screen Live Document Editor (`/applications/[id]`)
 
-The application editor provides a 45% / 55% split-screen workspace:
-- **Left Pane (10 Structured Editor Tabs)**:
-  1. **Bio / Header**: Edit Company Name, Role Title, Headline Title, Professional Summary, Email, and Phone.
-  2. **Experience History**: Edit, add, or remove role bullets for each job in your work history.
-  3. **Projects**: Edit independent engineering/automation projects, roles, dates, and technical bullets.
-  4. **Skills Pool**: Edit Key Achievements and Core Skill groups.
-  5. **Cover Letter Body**: Edit Date Line, DIN 5008 Subject Line (`Betreffzeile`), Positioning Subtitle, Sidebar Labels, Greeting, Body Paragraphs, Closing Phrase, and 1-Click Plain Text Copy.
-  6. **🎯 Strategy Target**: Inspect and edit the LLM's Fit Assessment (0–10 score, Probability Tier, Apply/Skip recommendation, Best Selling Angles, Main Risks), Role Classification, Keyword Strategy, Salary Positioning, Recruiter Objections & Neutralizers, and Quality Control metrics.
-  7. **📝 Form Answers**: Ready-to-copy answers for standard ATS portal questions (*Short Motivation*, *Why this Role?*, *Why this Company?*, *Additional Message*, *Availability*, *Work Permit*, *Education Explanation*).
-  8. **💼 Job Tracker**: Manage application status, interview dates, salary offers, recruiter contact details, call notes, and 1-click **Recruiter Follow-up & Thank-You Email Templates** (in English and German).
-  9. **🔍 ATS Scanner**: Real-time keyword match gauge against the pasted Job Description.
-  10. **Layout & Assets**: Template selector, Accent Color picker, Font Family selector (`Inter`, `Arial`, `Georgia`), A4 Density presets, Section toggles, Executive Portrait framing controls, and Handwritten Signature sizing/alignment.
-- **Right Pane (Live Emulated A4 Preview)**:
-  - Instant WYSIWYG rendering of **CV**, **Cover Letter**, and **Prep STAR** at true A4 dimensions (`210mm × 297mm`) with interactive zoom (`40%` to `120%`) and visual **A4 Page Break Guides**.
+The application editor pairs 10 structured form tabs on the left with a live paginated A4 preview on the right (with a clean **Editor / A4 Preview** toggle on narrower viewports):
+
+1. **Profile**: Company, role title, document language, contact header, availability, headline, and professional summary.
+2. **Experience**: Edit, add, reorder, or toggle visibility of work experience entries and bullets; pull verified items from your Master CV catalog.
+3. **Projects**: Edit project entries, tech stack, links, and bullets, or toggle project visibility on/off.
+4. **Skills**: Manage Key Achievements, grouped Core Skills, Education, Certifications, and Applied Methodologies.
+5. **Cover Letter**: Edit date line, subject line (`Betreffzeile`), positioning line, sidebar labels, greeting, structured paragraphs, closing phrase, and copy plain text in one click.
+6. **Strategy**: View and refine AI fit score, probability tier, apply/skip recommendation, role classification, keyword strategy, salary positioning, recruiter objection neutralizers, and quality control notes.
+7. **Form Answers**: Ready-to-copy responses for common ATS portal fields (*Short Motivation*, *Why This Role*, *Why This Company*, *Additional Message*, *Availability*, *Work Authorization*, *Salary Expectation*, *Links*) plus custom portal Q&A and outreach messages.
+8. **Tracking**: Pipeline status, job description storage, posting URL/ID/deadline, interview schedule, recruiter contact, notes, CRM review confirmation, and 1-click CRM activity logging.
+9. **ATS Audit**: Requirement-by-requirement evidence verification and live keyword placement analysis against the saved job description.
+10. **Layout & Assets**: Template switcher, executive accent palette, offline font presets, typography sliders, 1-click Smart Auto-Fit, portrait/signature controls, bundle order (*DACH* vs *ATS*), and dynamic local PDF attachment checkboxes.
+
+### Auto-Save & Keyboard Shortcuts
+- **Ctrl+S / Cmd+S** saves immediately from anywhere in the editor or Master CV.
+- Optional **3-second debounced Auto-Save** (persisted in `jas_autosave_enabled`), which automatically pauses on save conflicts so a newer revision is never overwritten.
 
 ---
 
-## 7. Berlin & DACH Readiness Toolbar (Live Quality Telemetry)
+## 7. Readiness Toolbar, Text Cleanup & Pre-Send Final Review
 
-Floating above the live A4 preview pane, the **Readiness Toolbar** (`analyzeApplicationReadiness`) gives you real-time editorial feedback:
-- **Word Budget Badge (`CV: XXXw · Ideal / Short / Dense`)**: Green when your CV hits the Berlin Editorial sweet spot (`330–460 words`), amber when too short or overly dense.
-- **Bullet Conciseness Counter (`XX bullets · Concise`)**: Warns if any bullet exceeds 20 words (preserving the 6-second recruiter scan rule).
-- **Anti-AI Detector & 1-Click Sanitizer (`✓ 100% Human` or `🧹 Clean AI (N)`)**: Highlights any remaining AI clichés or duplicate bullets and cleans them all with a single click.
-- **Quick Section Toggles (`Achievements: ON/OFF`, `Projects: ON/OFF`)**: Instantly toggle sections on or off (e.g., turning `Achievements: OFF` for a pure chronological German *Lebenslauf*).
-- **1-Click Smart Auto-Fit (`✨ Auto-Fit`)**: Automatically calculates the optimal font size (`9.4pt`–`10.2pt`), line spacing (`1.22`–`1.35`), and section spacing (`8px`–`13px`) based on total word and bullet counts so your CV fills 1 or 2 A4 pages cleanly without awkward orphan lines.
-
----
-
-## 8. Document Templates: ATS Clean, Modern Professional, DIN 5008 Sidebar & STAR Prep
-
-All templates (`src/components/templates/DocumentTemplates.tsx`) are engineered for both machine readability (Workday, Greenhouse, Personio, Lever, SAP SuccessFactors) and human visual appeal:
-
-1. **ATS Clean CV (`ats-clean`)**:
-   - Single-column, high-parseability executive hierarchy with optional 2-column header when the **3:4 Executive Portrait** is enabled.
-   - Crisp typographic hierarchy, right-aligned tabular dates, and inline skill groups.
-2. **Modern Professional CV (`modern-professional`)**:
-   - Contemporary European executive layout with accent-colored subtle background header tint, structured skill pills, and 3:4 Executive Portrait support.
-3. **ATS Clean Cover Letter (`ats-letter`)**:
-   - Classic single-column DIN 5008 business letter layout with bold subject line (`Betreffzeile`) and handwritten signature block.
-4. **ASR Executive Sidebar Cover Letter (`asr-sidebar`)**:
-   - Editorial 2-column layout featuring a deep navy vertical sidebar (`#10233f`) with monogram badge, target role/company metadata, contact details, and a clean white letter body.
-5. **STAR Interview Preparation Guide (`prep-template-star`)**:
-   - Printable A4 interview dossier containing your **30-Second Elevator Pitch**, **60-Second Narrative**, **STAR Story Cards** (Situation, Task, Action, Result, Why It Matters), **Role Fit & Objection Neutralizers**, and **Smart Questions to Ask the Interviewer**.
+- **Live A4 Pagination & Readiness Bar (`ApplicationPreviewPane`)**: Measures true A4 page breaks (`210mm × 297mm`) in real time, tracks CV word budget and bullet length, offers quick section toggles, and provides 1-click **Smart Auto-Fit** typography tuning.
+- **Text Cleanup Dialog (`TextCleanupDialog`)**: Highlights detected AI clichés, awkward punctuation, or repetitive wording and lets you approve cleanups interactively.
+- **Pre-Send Final Review (`FinalReviewDialog` + `src/lib/finalReview.ts`)**: Runs a comprehensive pre-flight checklist before submission, flagging:
+  - Unsaved edits or failed saves
+  - Missing contact info, unconfirmed availability, or unconfirmed work authorization
+  - Company/role mismatches between CV and Cover Letter
+  - Remaining placeholder text (`[To complete]`, `TODO`, etc.)
+  - Bilingual leaks (e.g., English headers or dates inside a German document)
+  - ATS keyword placement regressions, stale job analyses, or unverified must-have gaps
+  - Cover letter metrics absent from the CV or word counts above posting limits
+  - Exact rendered A4 page counts and outdated PDF deliveries
+  - Estimated merged PDF bundle sizes exceeding the 2 MB ATS portal cap
+  - Clicking any warning jumps directly to the relevant tab and focuses the target field.
 
 ---
 
-## 9. Candidature Strategy, Objection Handling & Portal Form Answers
+## 8. Document Templates & Offline `@fontsource` Typography
 
-Every imported JSON populates two dedicated strategic tabs that never clutter your printed PDFs (`STRATEGY-ONLY`):
-- **Recruiter Objection Neutralizer**: Lists likely recruiter hesitations (e.g., German fluency level, non-traditional degree path, industry transition) alongside the exact **Neutralization Strategy** and **Ready-to-Use Sentence** for interviews or cover notes.
-- **Salary Positioning**: Displays recommended annual gross salary ranges (EUR) and negotiation rationale tailored to the role's seniority and market.
-- **1-Click Portal Form Answers**: Pre-written responses for application portal textboxes with instant **`Copy Plain Text`** buttons so you can complete Workday/Greenhouse forms in seconds.
+All templates live in `src/components/templates/` and render identically in the browser preview and Headless Chromium PDF output using **bundled offline `@fontsource` fonts** (`IBM Plex Sans`, `IBM Plex Editorial`, `Plus Jakarta Sans`, `IBM Plex Serif`, `Inter`) with zero external font downloads.
+
+### CV Templates (3)
+1. **ATS Clean (`ats-clean`)**: Single-column high-parseability executive CV with clean hierarchy, right-aligned dates, and optional 3:4 portrait header.
+2. **Modern Professional (`modern-professional`)**: Contemporary executive header with subtle accent tint band, structured skills layout, and portrait framing support.
+3. **DACH Tabular (`dach-tabular`)**: Classic two-column European/German *Lebenslauf* layout separating tabular date columns from role details.
+
+### Cover Letter Templates (3) + STAR Prep
+1. **ATS Clean Letter (`ats-letter`)**: Clean single-column business letter with bold subject line and handwritten signature block.
+2. **Editorial Sidebar (`editorial-sidebar`)**: Executive two-column layout with a contrast accent sidebar, monogram badge, target role/company metadata, and crisp body column.
+3. **DIN 5008 Editorial (`din-editorial`)**: Structured German DIN 5008 business letter with sender line, recipient address block, date alignment, and *Betreffzeile*.
+4. **STAR Interview Prep (`StarPrepGuide`)**: Printable A4 guide containing your career arc, structured STAR story cards, objection neutralizers, and interviewer questions.
 
 ---
 
-## 10. ATS Keyword Compatibility Scanner & Job Pipeline Tracker
+## 9. Strategy, Objection Neutralizers, Outreach & Portal Form Answers
 
-- **ATS Scanner Tab**: Compares the pasted Job Description against your active CV text (Profile, Key Achievements, Core Skills, Experience Bullets), combining standard domain keywords with the LLM's `mustIncludeATSKeywords` and `niceToHaveKeywords`. Displays a percentage match gauge (`0%–100%`), green pills for **Matched Keywords**, and red pills for **Missing Keywords**.
-- **Job Tracker Tab**: Keeps your entire recruitment CRM inside the studio, including customizable status stages, interview schedule, salary offer tracking, recruiter contact info, and 1-click copyable follow-up emails.
+Strategic insights imported from your LLM stay strictly in editor-only tabs and never leak onto printed CVs or cover letters:
+- **Recruiter Objection Neutralizers**: Pairs likely recruiter concerns with neutralization talking points and ready-to-use sentences.
+- **Salary Positioning**: Stores recommended, safe, and ambitious targets plus negotiation rationale.
+- **Portal Form Answers & Outreach**: One-click **Copy Plain Text** buttons speed through Workday, Greenhouse, Personio, and Lever questionnaires and recruiter follow-ups.
 
 ---
 
-## 11. Vector PDF Compiler & Multi-Document Bewerbungsmappe Merger
+## 10. ATS Evidence Audit & Keyword Coverage
 
-When you click **`Export PDF`**, Job Application Studio does not use blurry browser screenshots—it compiles true vector PDFs on the backend:
+In the **ATS Audit** tab (`AtsScannerTab` + `RequirementEvidencePanel` + `src/lib/applicationQuality.ts`):
+- Verifies that every imported job requirement links to a real quote in the saved job description and real evidence in your Master CV (`direct`, `transferable`, `gap`, or `unknown`).
+- Automatically detects if the job description changed after the analysis was generated (*stale analysis* guard).
+- Tracks must-have and nice-to-have ATS keywords and flags regressions if a planned keyword is later deleted from its target section.
 
-- **Singleton Headless Chromium Engine (`/api/export-pdf`)**: Renders your exact HTML/CSS template at true A4 dimensions with `@page` print CSS rules (`break-inside: avoid` on experience blocks, projects, bullets, and signature blocks so paragraphs never split awkwardly across pages).
-- **DACH *Bewerbungsmappe* PDF Merger (`/api/merge-pdf`)**: Uses `pdf-lib` to combine your dynamically compiled HTML documents with static PDF certificates/references (`public/documents/references.pdf`):
-  - **Download CV** (CV only)
-  - **Download Cover Letter** (Cover Letter only)
-  - **Download STAR Prep** (Interview Prep Guide)
-  - **Download References** (Recommendation letters & certificates only)
-  - **CV + References** (Merged single PDF)
-  - **Cover Letter + References** (Merged single PDF)
-  - **Full Application Bundle** (Standard DACH order: **Cover Letter → CV → References & Certificates** in a single PDF file)
-- **Automatic Professional File Naming**: Automatically names exported files using clean ASCII conventions: `Candidate_Name_DocType_Company.pdf` (e.g., `Alex_Morgan_CV_Acme_Corp.pdf` or `Alex_Morgan_Application_Bundle_Kallisto_Cloud.pdf`).
+---
+
+## 11. Dynamic Local PDF Attachments & Tagged Bundle Compiler
+
+Job Application Studio ships with zero personal attachments. To bundle your own recommendation letters, transcripts, or certificates:
+
+1. Drop any `.pdf` files into `public/documents/`.
+2. The studio discovers them dynamically via `GET /api/references` (validating safe single-segment filenames, size, and page count).
+3. In the editor's **Layout & Assets** tab, check or uncheck which local PDFs to include for each specific application and choose your **Bundle Order**:
+   - **DACH Order**: `Cover Letter → CV → Selected Attachments`
+   - **ATS Order**: `CV → Cover Letter → Selected Attachments`
+4. Click **Export PDF** to compile true searchable, tagged vector PDFs via **Playwright Headless Chromium** (`/api/export-pdf`) and **`pdf-lib` TaggedPdfMerger** (`/api/merge-pdf`):
+   - **Individual**: *Download CV*, *Download Cover Letter*, *Download Attachments*, *Download STAR Prep*
+   - **Merged Bundles**: *CV + Attachments*, *Cover Letter + Attachments*, *Full Application Bundle*
+   - Automatically embeds localized PDF outline bookmarks (`Cover Letter`/`CV` in English, `Anschreiben`/`Lebenslauf` in German, `Carta de presentación`/`Currículum` in Spanish, plus formatted titles for every attached PDF).
+   - Warns immediately if the resulting file exceeds **2 MB**, and saves a frozen delivery record so your CRM knows exactly what was exported.
+
+---
+
+## 12. Atomic Storage, Conflict Recovery & Verified Local Backups
+
+- **Atomic File-Locked Writes**: Every JSON save acquires a cross-process lock (`proper-lockfile`), writes to a temporary file, and atomically replaces the target so crashes never corrupt `data/*.json`.
+- **Optimistic Revision Protection (`HTTP 409`)**: If the same application or Master CV is modified in another tab, the editor refuses to silently overwrite it, keeps your edits in memory, lets you download an instant JSON backup, and provides a 1-click server reload.
+- **Manual Local Backups & Maintenance**:
+  - From the Dashboard's **Profile, Default Assets & Local Backups** panel (or via `npm run backup`), create SHA-256 manifest-verified snapshots in `.local/backups`, download a complete portable workspace `.json`, or prune orphaned uploads/temp files.
+  - Verify or restore snapshots from the terminal with `npm run backup -- --verify <dir>` or `npm run backup -- --restore <dir>`.

@@ -1,274 +1,114 @@
-import { NextResponse } from "next/server";
-import { chromium, type Browser } from "playwright";
+import { z } from "zod";
 import { PDFDocument } from "pdf-lib";
-import fs from "fs";
-import path from "path";
+import { applyMergedOutlines, applyPdfMetadata, renderHtmlToPdfWithMeta, sanitizeFilename, safePdfFilename, readReferencePdf, validatePdfHtml, PDF_LIMITS } from "@/lib/pdfEngine";
+import { formatReferenceLabel } from "@/lib/referenceDocuments";
+import { recordPdfExport } from "@/lib/exportStore";
+import { guardApiRequest, readJsonRequest, RequestSecurityError, securityError, privateResponseHeaders } from "@/lib/requestSecurity";
+import { TaggedPdfMerger } from "@/lib/mergeTaggedPdf";
 
-const BASE_DIR = process.cwd();
-const EXPORTS_DIR = path.join(BASE_DIR, "exports");
-const UPLOADS_DIR = path.join(BASE_DIR, "public", "uploads");
-const DOCUMENTS_DIR = path.join(BASE_DIR, "public", "documents");
+const PartSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("html"), content: z.string().min(1), role: z.enum(["deckblatt", "letter", "cv", "html"]).optional(), title: z.string().max(120).optional() }),
+  z.object({ type: z.literal("file"), id: z.string().max(160).optional(), content: z.string().max(500).optional(), title: z.string().max(120).optional() }),
+]);
+const MergeRequestSchema = z.object({
+  parts: z.array(PartSchema).min(1).max(PDF_LIMITS.parts),
+  fileName: z.string().max(1000).optional(),
+  documentType: z.string().max(40).optional(),
+  company: z.string().max(500).optional(),
+  roleTitle: z.string().max(500).optional(),
+  author: z.string().max(500).optional(),
+  language: z.string().max(30).optional(),
+  keywords: z.array(z.string().max(200)).max(80).optional(),
+  // Optional link to the saved application; without it the copy is stored but no delivery is recorded.
+  applicationId: z.string().max(80).optional(),
+  revision: z.number().int().nonnegative().optional(),
+});
 
-function sanitizeFilename(name: string): string {
-  return String(name || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "_")
-    .replace(/[^a-zA-Z0-9_\-]/g, "")
-    .replace(/_+/g, "_")
-    .slice(0, 100);
-}
-
-function convertImagesToBase64(html: string): string {
-  const regex = /src=["'](\/uploads\/[^"']+)["']/g;
-  let match;
-  let modifiedHtml = html;
-
-  while ((match = regex.exec(html)) !== null) {
-    const relativePath = match[1];
-    const cleanRelativePath = relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
-    const fullPath = path.resolve(BASE_DIR, "public", cleanRelativePath);
-
-    if (!fullPath.startsWith(path.resolve(UPLOADS_DIR) + path.sep)) {
-      continue;
-    }
-
-    if (fs.existsSync(fullPath)) {
-      try {
-        const fileBuffer = fs.readFileSync(fullPath);
-        const ext = path.extname(fullPath).toLowerCase();
-        let mimeType = "image/png";
-        if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
-        else if (ext === ".webp") mimeType = "image/webp";
-
-        const base64 = fileBuffer.toString("base64");
-        const dataUrl = `data:${mimeType};base64,${base64}`;
-        modifiedHtml = modifiedHtml.replaceAll(relativePath, dataUrl);
-      } catch (err) {
-        console.error("Failed to convert image to base64:", fullPath, err);
-      }
-    }
+function defaultOutlineTitle(part: z.infer<typeof PartSchema>, language?: string): string {
+  if (part.title?.trim()) return part.title.trim();
+  const isDe = (language || "").toLowerCase().includes("german") || (language || "").toLowerCase() === "de";
+  const isEs = (language || "").toLowerCase().includes("spanish") || (language || "").toLowerCase() === "es";
+  if (part.type === "file") {
+    if (part.id && part.id !== "references") return formatReferenceLabel(part.id);
+    return isDe ? "Anlagen & Zeugnisse" : isEs ? "Referencias y certificados" : "References & Attachments";
   }
-  return modifiedHtml;
+  if (part.role === "letter") return isDe ? "Anschreiben" : isEs ? "Carta de presentación" : "Cover Letter";
+  if (part.role === "cv") return isDe ? "Lebenslauf" : isEs ? "Currículum" : "CV";
+  if (part.role === "deckblatt") return isDe ? "Deckblatt" : isEs ? "Portada" : "Cover Sheet";
+  return isDe ? "Dokument" : isEs ? "Documento" : "Document";
 }
 
-const CHROMIUM_ARGS = [
-  "--no-sandbox",
-  "--disable-setuid-sandbox",
-  "--disable-gpu",
-  "--disable-dev-shm-usage",
-  "--no-first-run",
-  "--no-default-browser-check",
-  "--disable-extensions",
-  "--disable-background-networking",
-];
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __pdfChromiumBrowser: Browser | null | undefined;
-  // eslint-disable-next-line no-var
-  var __pdfChromiumLaunchPromise: Promise<Browser> | null | undefined;
-}
-
-async function getSharedBrowser(): Promise<Browser> {
-  if (globalThis.__pdfChromiumBrowser && globalThis.__pdfChromiumBrowser.isConnected()) {
-    return globalThis.__pdfChromiumBrowser;
-  }
-
-  if (globalThis.__pdfChromiumLaunchPromise) {
-    return globalThis.__pdfChromiumLaunchPromise;
-  }
-
-  globalThis.__pdfChromiumLaunchPromise = chromium
-    .launch({
-      headless: true,
-      args: CHROMIUM_ARGS,
-      timeout: 60000,
-    })
-    .then((browser) => {
-      globalThis.__pdfChromiumBrowser = browser;
-      globalThis.__pdfChromiumLaunchPromise = null;
-      browser.on("disconnected", () => {
-        if (globalThis.__pdfChromiumBrowser === browser) {
-          globalThis.__pdfChromiumBrowser = null;
-        }
-      });
-      return browser;
-    })
-    .catch((err) => {
-      globalThis.__pdfChromiumLaunchPromise = null;
-      globalThis.__pdfChromiumBrowser = null;
-      throw err;
-    });
-
-  return globalThis.__pdfChromiumLaunchPromise;
-}
-
-async function renderHtmlToPdf(html: string): Promise<Uint8Array> {
-  let context: import("playwright").BrowserContext | null = null;
+export async function POST(request: Request) {
+  const rejected = guardApiRequest(request, "json");
+  if (rejected) return rejected;
   try {
-    let browser: Browser;
-    try {
-      browser = await getSharedBrowser();
-      context = await browser.newContext();
-    } catch {
-      globalThis.__pdfChromiumBrowser = null;
-      globalThis.__pdfChromiumLaunchPromise = null;
-      browser = await getSharedBrowser();
-      context = await browser.newContext();
-    }
-
-    const page = await context.newPage();
-
-    await page.route("**/*", (route) => {
-      const url = route.request().url().toLowerCase();
-      if (url.startsWith("file:") || url.startsWith("javascript:")) {
-        return route.abort();
-      }
-      route.continue();
-    });
-
-    await page.setViewportSize({ width: 794, height: 1123 });
-
-    try {
-      await page.setContent(html, { waitUntil: "networkidle", timeout: 10000 });
-    } catch {
-      await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 5000 });
-    }
-
-    try {
-      await page.evaluate(() => document.fonts.ready);
-    } catch {}
-
-    await page.emulateMedia({ media: "print" });
-
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: "0px", bottom: "0px", left: "0px", right: "0px" },
-    });
-
-    return new Uint8Array(pdfBuffer);
-  } finally {
-    if (context) {
-      try {
-        await context.close();
-      } catch {}
-    }
-  }
-}
-
-interface PdfPart {
-  type: "html" | "file";
-  content: string;
-}
-
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { parts, fileName, company } = body as {
-      parts: PdfPart[];
-      fileName?: string;
-      company?: string;
-    };
-
-    if (!parts || !Array.isArray(parts) || parts.length === 0) {
-      return NextResponse.json({ error: "Missing PDF parts" }, { status: 400 });
-    }
-
-    const pdfBuffers: Uint8Array[] = [];
-
+    const parsed = MergeRequestSchema.safeParse(await readJsonRequest(request, PDF_LIMITS.requestBytes));
+    if (!parsed.success) return securityError("Invalid PDF bundle request");
+    const { parts, fileName, company, roleTitle, documentType, author, language, keywords, applicationId, revision } = parsed.data;
+    let htmlBytes = 0;
+    // Validate all parts before launching Chromium or creating an export file.
+    const prepared: Array<{ html?: string; bytes?: Uint8Array; part: z.infer<typeof PartSchema> }> = [];
     for (const part of parts) {
       if (part.type === "html") {
-        if (!part.content || typeof part.content !== "string") {
-          return NextResponse.json({ error: "Invalid HTML content in PDF parts" }, { status: 400 });
-        }
-        const processedHtml = convertImagesToBase64(part.content);
-        const buffer = await renderHtmlToPdf(processedHtml);
-        pdfBuffers.push(buffer);
-      } else if (part.type === "file") {
-        // Enforce strict security boundary: only allow PDF files from public/documents or public/uploads
-        const normalizedRel = path.normalize(part.content).replace(/^(\.\.(\/|\\|$))+/, "");
-        const fullPath = path.resolve(BASE_DIR, normalizedRel);
-
-        const isDoc = fullPath.startsWith(path.resolve(DOCUMENTS_DIR) + path.sep);
-        const isUpload = fullPath.startsWith(path.resolve(UPLOADS_DIR) + path.sep);
-
-        if (!isDoc && !isUpload) {
-          return NextResponse.json(
-            { error: "Access denied: File part path outside permitted documents directories." },
-            { status: 403 }
-          );
-        }
-
-        if (!fullPath.toLowerCase().endsWith(".pdf")) {
-          return NextResponse.json({ error: "Invalid file type: only PDF files are allowed." }, { status: 400 });
-        }
-
-        if (!fs.existsSync(fullPath)) {
-          // If a requested optional bundle file like references.pdf does not exist yet, inform the user clearly
-          const baseName = path.basename(fullPath);
-          return NextResponse.json(
-            {
-              error: `Document not found: '${baseName}'. Please place your certificate/reference PDF in 'public/documents/${baseName}' first.`,
-            },
-            { status: 404 }
-          );
-        }
-
-        const buffer = fs.readFileSync(fullPath);
-        pdfBuffers.push(new Uint8Array(buffer));
+        validatePdfHtml(part.content);
+        htmlBytes += Buffer.byteLength(part.content, "utf8");
+        if (htmlBytes > PDF_LIMITS.mergeHtmlBytes) throw new RequestSecurityError("Bundle HTML exceeds the permitted size", 413);
+        prepared.push({ html: part.content, part });
+      } else {
+        prepared.push({ bytes: await readReferencePdf(part), part });
       }
     }
-
-    const mergedPdf = await PDFDocument.create();
-
-    for (const buffer of pdfBuffers) {
-      const donorPdf = await PDFDocument.load(buffer);
-      const copiedPages = await mergedPdf.copyPages(donorPdf, donorPdf.getPageIndices());
-      for (const page of copiedPages) {
-        mergedPdf.addPage(page);
+    const deadline = Date.now() + 90000;
+    const merged = await PDFDocument.create();
+    const merger = new TaggedPdfMerger(merged);
+    const outlines: Array<{ title: string; pageIndex: number }> = [];
+    const warnings: string[] = [];
+    for (const item of prepared) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new RequestSecurityError("PDF bundle rendering timed out", 504);
+      const rendered = item.bytes ? { bytes: item.bytes, warnings: [] as string[] } : await renderHtmlToPdfWithMeta(item.html!, { timeoutMs: remaining });
+      if (rendered.warnings.length) warnings.push(...rendered.warnings);
+      let donor: PDFDocument;
+      try {
+        donor = await PDFDocument.load(rendered.bytes);
+      } catch {
+        throw new RequestSecurityError("A PDF document could not be read");
       }
-    }
-
-    const mergedBytes = await mergedPdf.save();
-
-    let finalFileName = fileName ? sanitizeFilename(String(fileName).replace(/\.pdf$/i, "")) : "";
-    if (!finalFileName) {
-      const cleanCompany = sanitizeFilename(company || "Generic");
-      finalFileName = `Application_Bundle_${cleanCompany}`;
-    }
-    finalFileName = `${finalFileName}.pdf`;
-
-    const cleanCompany = company ? sanitizeFilename(company) : "";
-    const exportsTargetDir = cleanCompany ? path.join(EXPORTS_DIR, cleanCompany) : EXPORTS_DIR;
-    const resolvedTarget = path.resolve(exportsTargetDir);
-
-    if (resolvedTarget.startsWith(path.resolve(EXPORTS_DIR))) {
-      if (!fs.existsSync(resolvedTarget)) {
-        fs.mkdirSync(resolvedTarget, { recursive: true });
+      if (donor.getPageCount() > 100 || merged.getPageCount() + donor.getPageCount() > 150) {
+        throw new RequestSecurityError("PDF bundle has too many pages", 413);
       }
-      const localPath = path.join(resolvedTarget, finalFileName);
-      fs.writeFileSync(localPath, mergedBytes);
+      const startPage = merged.getPageCount();
+      merger.append(donor);
+      outlines.push({ title: defaultOutlineTitle(item.part, language), pageIndex: startPage });
     }
-
-    const headerSafeFilename = finalFileName.replace(/[\r\n"]/g, "");
-
-    return new Response(Buffer.from(mergedBytes), {
-      status: 200,
+    applyMergedOutlines(merged, outlines);
+    applyPdfMetadata(merged, { documentType: documentType || "bundle", company, roleTitle, author, language, keywords });
+    const bytes = await merged.save();
+    const filename = safePdfFilename(fileName, `Candidate_Application_Bundle_${sanitizeFilename(company || "Generic")}`);
+    // Records the real order of the bundle (e.g. letter -> CV -> references) with the delivery.
+    const partLabels = parts.map((part) => part.type === "file" ? (part.id || "references") : (part.role || "html"));
+    const stored = recordPdfExport({ bytes, downloadName: filename, documentType: documentType || "bundle", applicationId, clientRevision: revision, company, parts: partLabels });
+    return new Response(new Uint8Array(bytes), {
       headers: {
+        ...privateResponseHeaders(),
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${headerSafeFilename}"`,
-        "Content-Length": mergedBytes.length.toString(),
-        "X-Filename": headerSafeFilename,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Length": String(bytes.length),
+        "X-Filename": filename,
+        "X-PDF-Pages": String(merged.getPageCount()),
+        "X-PDF-Warnings": warnings.length ? encodeURIComponent(warnings.join(" | ")) : "",
+        "X-PDF-Tagging": merger.taggingStatus,
+        "X-PDF-Size-Bytes": String(bytes.length),
+        "X-PDF-Size-Warning": bytes.length > PDF_LIMITS.portalWarningBytes ? "exceeds_2mb" : "ok",
+        ...(stored.id ? { "X-Delivery-Id": stored.id } : {}),
       },
     });
-  } catch (err: any) {
-    console.error("PDF merge failed:", err);
-    return NextResponse.json(
-      { error: "PDF merge failed: " + (err.message || String(err)) },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    if (error instanceof RequestSecurityError) return securityError(error.message, error.status);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("PDF merge failed:", msg);
+    if (/printable area|100-page limit|signature block|signature image|graphic asset/i.test(msg)) return securityError(msg, 422);
+    if (/timeout|timed out/i.test(msg)) return securityError("PDF bundle export timed out. Please retry.", 504);
+    return securityError("Failed to assemble the PDF bundle. Please retry.", 500);
   }
 }

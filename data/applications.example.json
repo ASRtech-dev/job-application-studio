@@ -1,234 +1,333 @@
 [
   {
-    "id": "app_demo_example",
-    "company": "Kallisto Cloud GmbH",
-    "roleTitle": "Operations & Process Analyst",
-    "dateCreated": "2026-03-01T10:00:00.000Z",
-    "dateModified": "2026-03-01T10:00:00.000Z",
-    "status": "draft",
-    "language": "English",
-    "jobLocation": "Berlin, Germany / Hybrid",
+    "id": "app_example_en",
+    "company": "Kallisto Analytics Ltd.",
+    "roleTitle": "Senior Operations & Strategy Manager",
+    "jobLocation": "London, United Kingdom",
     "workModel": "Hybrid",
-    "notes": "Sample demo application showcasing ATS-optimized CV and DIN 5008 cover letter formatting.",
-    "interviewDate": "",
-    "recruiterContact": "Talent Acquisition Team",
-    "salaryOffer": "",
-    "jobDescription": "Looking for an Operations & Process Analyst experienced in BPMN mapping, workflow automation with n8n/Make, and cross-functional operational steering in Berlin.",
-    "schemaVersion": 2,
-    "importMetadata": null,
-    "roleClassification": {
-      "type": "coreTarget",
-      "seniorityLevel": "mid",
-      "roleFamily": "Business Process Operations",
-      "applicationPriority": "high",
-      "outputMode": "standard",
-      "recommendedPositioning": "Highlight 5+ years of multi-market operations steering, BPMN process standardization, and production n8n automations.",
-      "cvIntensity": "Medium",
-      "overqualificationRisk": "Low",
-      "dealBreakerRisk": "Low"
-    },
-    "formFieldAnswers": {
-      "shortMotivationMessage": "With over 5 years of hands-on operations analysis and workflow automation experience in Berlin, I specialize in turning complex multi-market workflows into structured, automated operating models.",
-      "whyThisRole": "The focus on scalable process architecture and system integrations matches my track record designing automated workflows and single-source-of-truth repositories.",
-      "whyThisCompany": "Kallisto Cloud combines enterprise infrastructure reliability with practical automation innovation.",
-      "additionalMessage": "Available immediately for on-site or hybrid collaboration in Berlin.",
-      "availability": "Available immediately",
-      "degreeExplanation": "Completed B.Sc. in Business Informatics from Technical University of Berlin.",
-      "workPermitGermany": "Yes",
-      "website": "https://alexmorgan.example.com",
-      "linkedin": "https://linkedin.com/in/alexmorgan"
-    },
-    "salaryPositioning": {
-      "recommendedRangeEUR": "60,000 – 70,000 EUR",
-      "safeNumberEUR": "65,000 EUR",
-      "ambitiousNumberEUR": "72,000 EUR",
-      "riskComment": "Aligns with current Berlin mid-to-senior operations analyst market bands."
-    },
-    "keywordStrategy": {
-      "mustIncludeATSKeywords": ["BPMN", "Process Mapping", "Workflow Automation", "n8n", "SOP", "KPI Reporting"],
-      "niceToHaveKeywords": ["Python", "PostgreSQL", "REST APIs", "Lean Six Sigma"],
-      "humanNarrativeKeywords": ["operational bridge", "single source of truth", "evidence-driven steering"],
-      "avoidOrMinimizeKeywords": ["unsupported tools", "theoretical concepts"]
-    },
-    "recruiterConcernHandling": {
-      "likelyConcerns": [
-        {
-          "concern": "Does the candidate balance technical scripting with non-technical business communication?",
-          "howToNeutralize": "Emphasize cross-functional alignment workshops and documented SOPs alongside API scripting.",
-          "sentenceToUse": "I regularly translate technical data flows into clear, stakeholder-facing operating standards and executive summaries."
-        }
-      ]
-    },
-    "fitAssessment": {
-      "scoreOutOf10": 8.8,
-      "probabilityTier": "High",
-      "summary": "Strong direct alignment on BPMN process mapping, CRM automation, and cross-functional reporting cadences.",
-      "bestAngles": ["5+ years operations experience in Berlin", "Hands-on n8n and API integration delivery", "Documented repository of 100+ SOPs"],
-      "mainRisks": ["None identified for core requirements"],
-      "recommendedApplicationStrategy": "Position as a pragmatic process architect who delivers both documentation discipline and practical automation.",
-      "recommendedTone": "Direct, evidence-driven, analytical, zero corporate fluff.",
-      "recommendedCVVersion": "ATS Clean (2-Page)",
-      "applyOrSkip": "Apply"
-    },
-    "qualityControl": {
-      "directEvidenceUsed": ["Horizon Global Operations", "Apex Logistics Dashboards"],
-      "transferableEvidenceUsed": ["n8n workflow engineering"],
-      "adaptableSkillsUsed": ["Python reporting automation"],
-      "potentialOverclaimsAvoided": ["No unverified tools claimed"],
-      "atsKeywordsIncluded": ["BPMN", "n8n", "SOP", "KPI", "Process Mapping"],
-      "humanRecruiterImpression": "Clear, grounded operator with measurable impact metrics and structured execution.",
-      "finalContentRisk": "Low",
-      "oneSentencePositioning": "Operations Analyst bridging process architecture and practical workflow automation."
-    },
+    "language": "English",
+    "status": "reviewed",
+    "dateCreated": "2026-03-01T09:00:00.000Z",
+    "dateModified": "2026-03-01T10:30:00.000Z",
+    "notes": "Example application — safe to edit or delete.",
+    "jobDescription": "Kallisto Analytics is looking for a Senior Operations & Strategy Manager in London (Hybrid) to streamline cross-functional customer onboarding, standardize operational playbooks, automate KPI reporting in SQL and Python, and coordinate engineering priorities in Jira and Confluence.",
     "cvContent": {
       "header": {
         "fullName": "Alex Morgan",
-        "headline": "Business Operations Analyst · Process Optimization · Workflow Automation",
-        "location": "Berlin, Germany",
+        "headline": "Senior Operations & Strategy Lead · Process Design · Cross-Functional Delivery",
+        "location": "London, United Kingdom",
         "email": "alex.morgan@example.com",
-        "phone": "+49 151 2345678",
+        "phone": "+44 20 7946 0192",
+        "availability": "Available with 2 weeks' notice (example)",
         "links": [
-          { "label": "LinkedIn", "url": "https://linkedin.com/in/alexmorgan" },
-          { "label": "GitHub", "url": "https://github.com/alexmorgan-dev" },
-          { "label": "Portfolio", "url": "https://alexmorgan.example.com" }
+          {
+            "label": "LinkedIn",
+            "url": "https://www.linkedin.com/in/alex-morgan-example/"
+          },
+          {
+            "label": "Portfolio",
+            "url": "https://alexmorgan.example.com"
+          },
+          {
+            "label": "GitHub",
+            "url": "https://github.com/alex-morgan-example"
+          }
         ],
-        "availability": "Available immediately",
         "languages": [
-          { "language": "English", "level": "C2 / Native" },
-          { "language": "German", "level": "B2 / Professional" },
-          { "language": "Spanish", "level": "B1 / Intermediate" }
+          {
+            "language": "English",
+            "level": "Native"
+          },
+          {
+            "language": "German",
+            "level": "B2 / Professional"
+          },
+          {
+            "language": "Spanish",
+            "level": "B1 / Conversational"
+          }
         ]
       },
-      "professionalProfile": "Results-oriented Business Operations Analyst with 5+ years of experience streamlining complex processes and shipping production automations across international teams. Combines structured BPMN process mapping, API integrations, and hands-on scripting to reduce manual toil and elevate reporting precision.",
+      "professionalProfile": "Operations and Strategy Lead with 6+ years redesigning cross-functional onboarding workflows, governing centralized playbooks, and automating KPI reporting in SQL and Python. Proven track record reducing ticket resolution time by 34% and sustaining 98.5% SLA adherence across enterprise accounts.",
       "keyAchievements": [
-        "Redesigned multi-department ticket dispatch workflows, cutting end-to-end turnaround time by **65%**.",
-        "Built and standardized an operational knowledge repository of **100+ SOPs** adopted across 8 regional teams.",
-        "Automated recurring financial variance reporting scripts, eliminating **15 hours** of manual spreadsheet work weekly."
+        "Cut regional ticket resolution time by **34%** by redesigning intake taxonomy and CRM routing across 4 hubs.",
+        "Saved **12 hours/week** by replacing fragmented spreadsheet reporting with automated **SQL and Python** pipelines.",
+        "Reduced new-hire ramp time by **25%** through a centrally governed **60+ playbook** knowledge hub."
       ],
       "coreSkills": [
         {
-          "group": "Process & Operations",
-          "skills": ["Process Mapping", "BPMN 2.0", "Lean Operations", "SOP Standardization", "Root-Cause Analysis"]
+          "group": "Strategy & Operations",
+          "skills": [
+            "Process Improvement",
+            "Workflow Design",
+            "Root-Cause Analysis",
+            "KPI Reporting",
+            "Change Management"
+          ]
         },
         {
-          "group": "Automation & Integration",
-          "skills": ["n8n", "Make", "REST APIs", "Webhooks", "JSON", "Python Scripting"]
+          "group": "Systems & Data",
+          "skills": [
+            "SQL",
+            "Python",
+            "REST APIs",
+            "CRM Administration",
+            "Spreadsheet Automation"
+          ]
         },
         {
-          "group": "Data & Systems",
-          "skills": ["PostgreSQL", "SQL Queries", "Salesforce", "Jira Service Desk", "Tableau"]
+          "group": "Delivery & Collaboration",
+          "skills": [
+            "Jira",
+            "Confluence",
+            "Client Onboarding",
+            "Stakeholder Alignment",
+            "SLA Governance"
+          ]
         },
         {
-          "group": "Collaboration & Delivery",
-          "skills": ["Cross-functional Alignment", "Stakeholder Management", "Agile Cadences", "Audit Compliance"]
+          "group": "Governance & Quality",
+          "skills": [
+            "Quality Assurance",
+            "Documentation Standards",
+            "GDPR Compliance",
+            "Process Auditing"
+          ]
         }
       ],
       "experience": [
         {
           "id": "exp-1",
-          "jobTitle": "Senior Operations Analyst",
-          "company": "Horizon Global Technologies GmbH",
-          "location": "Berlin, Germany",
+          "jobTitle": "Senior Operations & Strategy Manager",
+          "company": "Northstar Cloud Ltd.",
+          "location": "London, United Kingdom",
           "dates": "Jan 2023 – Present",
           "summary": "",
+          "include": true,
           "bullets": [
-            "Mapped and standardized cross-departmental operations flows across 8 European regions using BPMN standards.",
-            "Engineered automated ticket escalation workflows in n8n and REST APIs, improving first-response SLAs by **45%**.",
-            "Authored and published over 60 Standard Operating Procedures in a central operational repository.",
-            "Built automated Python data sync routines between CRM and internal PostgreSQL data warehouses."
-          ],
-          "include": true
+            "Redesigned regional customer intake and routing workflows across 4 operating hubs, cutting average ticket resolution time by **34%**.",
+            "Built and governed a centralized **60+ playbook** documentation hub with quarterly ownership audits, reducing new-hire onboarding time by **25%**.",
+            "Led operational launches for **8 enterprise partner accounts**, maintaining **98.5% SLA adherence** across billing, support, and delivery teams.",
+            "Partnered with engineering via **Jira and Confluence** to automate weekly KPI reporting in **SQL and Python**, saving **12 hours/week** of manual effort."
+          ]
         },
         {
           "id": "exp-2",
-          "jobTitle": "Business Process Specialist",
-          "company": "Apex Logistics Solutions",
-          "location": "Berlin, Germany",
+          "jobTitle": "Operations Analyst",
+          "company": "Northstar Cloud Ltd.",
+          "location": "London, United Kingdom",
           "dates": "Mar 2021 – Dec 2022",
           "summary": "",
+          "include": true,
           "bullets": [
-            "Audited order-fulfillment bottlenecks and implemented root-cause remediation workflows.",
-            "Automated daily shipping variance dashboards, reducing manual spreadsheet reporting by **12 hours weekly**.",
-            "Facilitated cross-functional alignment sessions between operations, finance, and logistics leads."
-          ],
-          "include": true
+            "Audited high-volume service and fulfillment queues to surface recurring handoff defects, cutting rework volume by **28%** in two quarters.",
+            "Automated weekly SLA variance dashboards using spreadsheet scripts and CRM exports for regional team leads.",
+            "Triaged complex cross-team escalations and translated operational bottlenecks into prioritized engineering backlog items."
+          ]
         }
       ],
       "projects": [
         {
           "id": "proj-1",
-          "title": "Dispatch Flow Optimizer",
-          "role": "Lead Architect",
-          "dates": "2024",
-          "description": "Open-source queue orchestration prototype for high-volume customer dispatch.",
-          "bullets": [
-            "Implemented webhook ingestion pipelines processing 5,000+ daily payload events.",
-            "Integrated rules-based routing engine cutting backlog accumulation by **40%**."
+          "title": "OpsPulse — Automated SLA & Handoff Monitor",
+          "role": "Project Lead",
+          "dates": "2024 – Present",
+          "description": "",
+          "url": "https://alexmorgan.example.com/opspulse",
+          "repoUrl": "https://github.com/alex-morgan-example/opspulse",
+          "techStack": [
+            "Python",
+            "SQL",
+            "REST APIs",
+            "Webhooks"
           ],
-          "include": true
+          "include": true,
+          "bullets": [
+            "Built webhook ingestion and **SQL** summary jobs to flag SLA breaches before daily standups.",
+            "Added automated weekly digest exports that reduced manual status preparation by **60%**."
+          ]
         }
       ],
       "education": [
         {
           "id": "edu-1",
-          "degree": "B.Sc. in Business Informatics / Information Systems",
-          "institution": "Technical University of Berlin",
-          "period": "2016 – 2020",
-          "description": "Core curriculum in enterprise systems architecture, database design, and software engineering."
+          "degree": "B.Sc. in Business & Information Systems",
+          "institution": "University of Manchester",
+          "period": "2015 – 2019",
+          "description": "Focus: Operations management, relational databases, and business process modeling."
         }
       ],
       "certifications": [
-        { "id": "cert-1", "name": "Lean Six Sigma Green Belt" },
-        { "id": "cert-2", "name": "BPMN 2.0 Business Process Modeling Professional" },
-        { "id": "cert-3", "name": "n8n Workflow Automation Specialist" }
+        {
+          "id": "cert-1",
+          "name": "Lean Six Sigma Green Belt",
+          "authority": "ASQ",
+          "date": "May 2022",
+          "credentialId": "EXAMPLE-LSS-001"
+        },
+        {
+          "id": "cert-2",
+          "name": "Certified Scrum Product Owner (CSPO)",
+          "authority": "Scrum Alliance",
+          "date": "Nov 2023",
+          "credentialId": "EXAMPLE-CSPO-002"
+        }
+      ],
+      "specializedCompetencies": [
+        "Operational Process Design & Continuous Improvement",
+        "Cross-Functional Program & Stakeholder Governance",
+        "Data-Driven KPI Steering & Automated Reporting"
       ]
     },
     "coverLetterContent": {
-      "company": "Kallisto Cloud GmbH",
-      "roleTitle": "Operations & Process Analyst",
-      "subjectLine": "Application for Operations & Process Analyst",
-      "positioningLine": "Business Operations Analyst · Process Optimization · Workflow Automation",
-      "dateLine": "Berlin, 1 March 2026",
-      "greeting": "Dear Kallisto Cloud Hiring Team,",
+      "company": "Kallisto Analytics Ltd.",
+      "roleTitle": "Senior Operations & Strategy Manager",
+      "subjectLine": "Application for Senior Operations & Strategy Manager",
+      "positioningLine": "Operations & Strategy Lead · Cross-Functional Onboarding & KPI Automation",
+      "dateLine": "London, 1 March 2026",
+      "greeting": "Dear Kallisto Analytics Hiring Team,",
       "paragraphs": [
         {
           "type": "opening",
-          "text": "Kallisto Cloud's work bridging infrastructure scale with reliable operations sits at an essential intersection. What makes this Operations & Process Analyst role compelling to me is the opportunity to replace fragmented handoffs with structured, automated operating workflows."
+          "text": "Your focus on streamlining enterprise customer onboarding while automating operational reporting closely mirrors the work I have led over the past four years at Northstar Cloud."
         },
         {
           "type": "evidence",
-          "text": "Over the past 5 years in Berlin, I have focused on translating operational friction into measurable workflow improvements. At Horizon Global, I helped map cross-regional processes using BPMN and implemented n8n routing automations that reduced ticket escalation turnaround times by 65%."
+          "text": "As Senior Operations & Strategy Manager, I redesigned regional intake and CRM routing across four operating hubs—cutting average resolution time by 34%—and governed a 60+ playbook library that reduced onboarding ramp time by 25%. Alongside process governance, I partnered with engineering in Jira and Confluence to replace manual spreadsheets with automated SQL and Python KPI pipelines, saving 12 hours per week."
         },
         {
           "type": "fit",
-          "text": "This operational background aligns closely with Kallisto Cloud's current needs: maintaining reliable steering cadences, documenting standard procedures across cross-functional teams, and integrating source systems through clean webhooks and API scripting."
-        },
-        {
-          "type": "contribution",
-          "text": "In this role, I would deliver a disciplined operating rhythm from day one: documenting As-Is workflows with precision, identifying operational bottlenecks before they impact customer SLAs, and delivering pragmatic automation prototypes."
+          "text": "Having also started as an Operations Analyst auditing service handoffs (reducing rework by 28%), I combine structured process discipline with practical data tooling so improvements stick after rollout."
         },
         {
           "type": "closing",
-          "text": "I would welcome the opportunity to discuss how my background in business process mapping, documentation governance, and workflow automation can support Kallisto Cloud's objectives."
+          "text": "I would welcome the chance to discuss how I can support Kallisto Analytics' operational scale and onboarding reliability in London."
         }
       ],
       "closingPhrase": "Kind regards,",
       "signatureName": "Alex Morgan",
-      "sidebarLabel": "COVER LETTER",
-      "sidebarRole": "Operations & Process Analyst",
-      "sidebarCompany": "Kallisto Cloud GmbH"
+      "sidebarLabel": "Application for",
+      "sidebarRole": "Senior Operations & Strategy Manager",
+      "sidebarCompany": "Kallisto Analytics Ltd."
+    },
+    "roleClassification": {
+      "type": "coreTarget",
+      "seniorityLevel": "senior",
+      "roleFamily": "Operations & Strategy",
+      "applicationPriority": "high",
+      "outputMode": "standard",
+      "recommendedPositioning": "Lead with multi-hub onboarding governance, playbook standardization, and hands-on SQL/Python KPI automation.",
+      "cvIntensity": "Medium",
+      "overqualificationRisk": "Low",
+      "dealBreakerRisk": "Low"
+    },
+    "keywordStrategy": {
+      "mustIncludeATSKeywords": [
+        "Client Onboarding",
+        "SQL",
+        "Python",
+        "Jira",
+        "Confluence",
+        "KPI Reporting",
+        "Process Improvement"
+      ],
+      "niceToHaveKeywords": [
+        "SLA Governance",
+        "Change Management",
+        "Root-Cause Analysis"
+      ],
+      "humanNarrativeKeywords": [
+        "Cross-functional delivery",
+        "Playbook governance"
+      ],
+      "avoidOrMinimizeKeywords": []
+    },
+    "fitAssessment": {
+      "scoreOutOf10": 9,
+      "probabilityTier": "High",
+      "summary": "Direct match across cross-functional onboarding, operational playbooks, Jira/Confluence coordination, and SQL/Python KPI reporting.",
+      "bestAngles": [
+        "34% resolution-time improvement paired with 60+ governed playbooks",
+        "Hands-on SQL and Python reporting automation saving 12 hours/week"
+      ],
+      "mainRisks": [
+        "Confirm whether dedicated BI visualization tools (e.g., Looker or Tableau) are required beyond SQL/Python"
+      ],
+      "recommendedApplicationStrategy": "Apply directly with tailored 1-page CV and concise cover letter.",
+      "recommendedTone": "Clear, analytical, and outcome-focused.",
+      "recommendedCVVersion": "Clean Executive (1–2 pages)",
+      "applyOrSkip": "Apply"
+    },
+    "formFieldAnswers": {
+      "shortMotivationMessage": "I bring 6+ years streamlining cross-functional onboarding and automating KPI reporting in SQL and Python—reducing ticket resolution time by 34% and manual reporting by 12 hours/week.",
+      "whyThisRole": "The combination of operational playbook governance and hands-on analytics automation matches my core strengths.",
+      "whyThisCompany": "Kallisto Analytics pairs high-growth enterprise delivery with strong engineering collaboration.",
+      "additionalMessage": "Available with 2 weeks' notice; happy to walk through concrete workflow and reporting case studies.",
+      "availability": "Available with 2 weeks' notice (example)",
+      "degreeExplanation": "",
+      "workAuthorization": "Authorized to work in the UK & EU (no sponsorship required)",
+      "website": "https://alexmorgan.example.com",
+      "linkedin": "https://www.linkedin.com/in/alex-morgan-example/",
+      "github": "https://github.com/alex-morgan-example",
+      "noticePeriod": "2 weeks"
+    },
+    "salaryPositioning": {
+      "recommendedRangeEUR": "£72,000 – £84,000",
+      "safeNumberEUR": "£74,000",
+      "ambitiousNumberEUR": "£84,000",
+      "riskComment": "Example range only — calibrate against current market benchmarks."
+    },
+    "recruiterConcernHandling": {
+      "likelyConcerns": [
+        {
+          "concern": "Hands-on technical depth vs. strategic management",
+          "howToNeutralize": "Highlight recent SQL/Python pipelines and OpsPulse project alongside 60+ governed playbooks.",
+          "sentenceToUse": "I stay close to execution—I built our weekly SQL and Python KPI views directly with engineering while owning operational strategy across four hubs."
+        }
+      ]
+    },
+    "interviewPrep": {
+      "careerArcSummary": "Grew from Business Coordinator at Meridian Advisory to Operations Analyst and Senior Operations & Strategy Manager at Northstar Cloud, combining process redesign with practical SQL and Python automation.",
+      "questionsToAsk": [
+        "Where is the biggest friction in customer onboarding handoffs today?",
+        "How do operations and engineering split ownership of internal reporting pipelines?"
+      ],
+      "callSurvivalNotes": [
+        "Notice period: 2 weeks (example).",
+        "Work authorization: UK & EU authorized without sponsorship."
+      ],
+      "starStories": [
+        {
+          "title": "Regional Intake & Routing Redesign",
+          "situation": "Four hubs used inconsistent ticket categories, creating frequent misrouting.",
+          "task": "Standardize intake workflows and governance playbooks without interrupting service.",
+          "action": "Audited queue data, redesigned CRM routing with team leads, and launched 60+ versioned playbooks.",
+          "result": "Reduced ticket resolution time by 34% and new-hire ramp time by 25%.",
+          "sourceId": "exp-1",
+          "keywords": [
+            "Process Improvement",
+            "Client Onboarding",
+            "Change Management"
+          ]
+        }
+      ]
     },
     "templateSettings": {
       "cvTemplate": "ats-clean",
-      "coverLetterTemplate": "asr-sidebar",
+      "coverLetterTemplate": "ats-letter",
       "accentColor": "#10233f",
-      "fontFamily": "Inter",
+      "fontFamily": "IBM Plex Sans",
       "pageSize": "A4",
-      "fontSize": 10,
-      "lineSpacing: 1.32,
-      "sectionSpacing": 12,
+      "fontSize": 10.5,
+      "lineSpacing": 1.42,
+      "sectionSpacing": 14,
+      "letterFontSize": 10.5,
+      "letterLineSpacing": 1.42,
+      "letterParagraphSpacing": 10,
       "showKeyAchievements": true,
-      "showProjects": true
+      "showProjects": true,
+      "showSpecializedCompetencies": true,
+      "packetOrder": "ats"
     },
     "assetSettings": {
       "signature": {
@@ -238,9 +337,212 @@
       },
       "photo": {
         "enabled": false,
+        "placement": "header-right",
         "cropStyle": "portrait-rectangle",
-        "placement": "header-right"
-      }
+        "widthPx": 116
+      },
+      "referenceDocIds": []
+    }
+  },
+  {
+    "id": "app_example_de",
+    "company": "Nordlicht Systems GmbH",
+    "roleTitle": "Operations & Process Manager (m/w/d)",
+    "jobLocation": "Hamburg, Deutschland",
+    "workModel": "Hybrid",
+    "language": "German",
+    "status": "draft",
+    "dateCreated": "2026-03-02T09:00:00.000Z",
+    "dateModified": "2026-03-02T09:15:00.000Z",
+    "notes": "Example German DIN 5008 / DACH Tabular application — safe to edit or delete.",
+    "jobDescription": "Nordlicht Systems GmbH sucht eine/n Operations & Process Manager (m/w/d) in Hamburg für Prozessoptimierung, Dokumentation, KPI-Reporting mit SQL und Python sowie die Schnittstelle zwischen Fachbereichen und IT (Jira, Confluence).",
+    "cvContent": {
+      "header": {
+        "fullName": "Alex Morgan",
+        "headline": "Operations & Process Manager · Prozessoptimierung · KPI-Reporting",
+        "location": "London, Vereinigtes Königreich",
+        "email": "alex.morgan@example.com",
+        "phone": "+44 20 7946 0192",
+        "availability": "Verfügbar nach 2 Wochen Kündigungsfrist (Beispiel)",
+        "links": [
+          {
+            "label": "LinkedIn",
+            "url": "https://www.linkedin.com/in/alex-morgan-example/"
+          },
+          {
+            "label": "Portfolio",
+            "url": "https://alexmorgan.example.com"
+          }
+        ],
+        "languages": [
+          {
+            "language": "Englisch",
+            "level": "Muttersprache"
+          },
+          {
+            "language": "Deutsch",
+            "level": "B2 / Verhandlungssicher im Aufbau"
+          },
+          {
+            "language": "Spanisch",
+            "level": "B1 / Konversationssicher"
+          }
+        ]
+      },
+      "professionalProfile": "Operations- und Prozessmanager mit über 6 Jahren Erfahrung in der Gestaltung bereichsübergreifender Abläufe, zentraler Prozessdokumentation und automatisiertem KPI-Reporting mit SQL und Python.",
+      "keyAchievements": [
+        "Bearbeitungszeit von Kundenanfragen durch einheitliche Routing-Prozesse an 4 Standorten um **34 %** verkürzt.",
+        "Wöchentliches KPI-Reporting mit **SQL und Python** automatisiert und **12 Stunden/Woche** manuellen Aufwand eingespart.",
+        "Zentrale Wissensbasis mit **60+ Playbooks** aufgebaut und die Einarbeitungszeit neuer Mitarbeitender um **25 %** reduziert."
+      ],
+      "coreSkills": [
+        {
+          "group": "Prozesse & Steuerung",
+          "skills": [
+            "Prozessoptimierung",
+            "Workflow-Design",
+            "Ursachenanalyse",
+            "KPI-Reporting",
+            "Change Management"
+          ]
+        },
+        {
+          "group": "Systeme & Daten",
+          "skills": [
+            "SQL",
+            "Python",
+            "REST APIs",
+            "CRM-Administration"
+          ]
+        },
+        {
+          "group": "Zusammenarbeit & Qualität",
+          "skills": [
+            "Jira",
+            "Confluence",
+            "Qualitätssicherung",
+            "DSGVO"
+          ]
+        }
+      ],
+      "experience": [
+        {
+          "id": "exp-1",
+          "jobTitle": "Senior Operations & Strategy Manager",
+          "company": "Northstar Cloud Ltd.",
+          "location": "London, Vereinigtes Königreich",
+          "dates": "Jan 2023 – Heute",
+          "summary": "",
+          "include": true,
+          "bullets": [
+            "Regionale Kunden- und Routing-Prozesse an 4 Standorten neu strukturiert und die Lösungszeit um **34 %** gesenkt.",
+            "Zentrales Dokumentations-Repository (**60+ Playbooks**) mit regelmäßigen Prüfzyklen etabliert (**25 %** kürzere Einarbeitung).",
+            "Wöchentliches KPI-Reporting in **SQL und Python** gemeinsam mit der IT über **Jira und Confluence** automatisiert (**12 Std./Woche** Einsparung)."
+          ]
+        },
+        {
+          "id": "exp-2",
+          "jobTitle": "Operations Analyst",
+          "company": "Northstar Cloud Ltd.",
+          "location": "London, Vereinigtes Königreich",
+          "dates": "Mär 2021 – Dez 2022",
+          "summary": "",
+          "include": true,
+          "bullets": [
+            "Service- und Übergabeprozesse systematisch geprüft und Nacharbeitsquoten innerhalb von zwei Quartalen um **28 %** reduziert.",
+            "SLA-Abweichungen über automatisierte Dashboards transparent gemacht und Eskalationen strukturiert gesteuert."
+          ]
+        }
+      ],
+      "projects": [],
+      "education": [
+        {
+          "id": "edu-1",
+          "degree": "B.Sc. Business & Information Systems",
+          "institution": "University of Manchester",
+          "period": "2015 – 2019",
+          "description": "Schwerpunkte: Operations Management, relationale Datenbanken und Prozessmodellierung."
+        }
+      ],
+      "certifications": [
+        {
+          "id": "cert-1",
+          "name": "Lean Six Sigma Green Belt",
+          "authority": "ASQ",
+          "date": "Mai 2022",
+          "credentialId": "EXAMPLE-LSS-001"
+        }
+      ],
+      "specializedCompetencies": []
+    },
+    "coverLetterContent": {
+      "company": "Nordlicht Systems GmbH",
+      "roleTitle": "Operations & Process Manager (m/w/d)",
+      "subjectLine": "Bewerbung als Operations & Process Manager (m/w/d)",
+      "positioningLine": "Prozessoptimierung · KPI-Automatisierung · Schnittstelle Fachbereich & IT",
+      "dateLine": "London, 2. März 2026",
+      "greeting": "Sehr geehrte Damen und Herren,",
+      "paragraphs": [
+        {
+          "type": "opening",
+          "text": "die ausgeschriebene Position als Operations & Process Manager bei der Nordlicht Systems GmbH verbindet genau jene Aufgaben, die meinen Schwerpunkt in den vergangenen Jahren geprägt haben: klare Prozessstrukturen, verlässliches KPI-Reporting und eine reibungslose Zusammenarbeit zwischen Fachbereichen und IT."
+        },
+        {
+          "type": "evidence",
+          "text": "Bei Northstar Cloud habe ich die Anfrage- und Routing-Prozesse an vier Standorten neu gestaltet und dadurch die Bearbeitungszeit um 34 % gesenkt. Gleichzeitig baute ich eine zentrale Wissensbasis mit über 60 Playbooks auf und automatisierte das wöchentliche Reporting mit SQL und Python, was 12 Stunden manuellen Aufwand pro Woche einsparte."
+        },
+        {
+          "type": "closing",
+          "text": "Gerne erläutere ich Ihnen in einem persönlichen Gespräch, wie ich Ihre operativen Abläufe in Hamburg gezielt unterstützen kann."
+        }
+      ],
+      "closingPhrase": "Mit freundlichen Grüßen,",
+      "signatureName": "Alex Morgan",
+      "sidebarLabel": "Bewerbung als",
+      "sidebarRole": "Operations & Process Manager (m/w/d)",
+      "sidebarCompany": "Nordlicht Systems GmbH"
+    },
+    "formFieldAnswers": {
+      "shortMotivationMessage": "Über 6 Jahre Erfahrung in Prozessoptimierung, Dokumentation und SQL/Python-Reporting.",
+      "whyThisRole": "Verbindung von Prozessqualität und datengetriebener Automatisierung.",
+      "whyThisCompany": "Klare Ausrichtung auf skalierbare Abläufe.",
+      "additionalMessage": "",
+      "availability": "Verfügbar nach 2 Wochen Kündigungsfrist (Beispiel)",
+      "degreeExplanation": "",
+      "workAuthorization": "Uneingeschränkte Arbeitserlaubnis in der EU & UK (Beispiel)",
+      "website": "https://alexmorgan.example.com",
+      "linkedin": "https://www.linkedin.com/in/alex-morgan-example/"
+    },
+    "templateSettings": {
+      "cvTemplate": "dach-tabular",
+      "coverLetterTemplate": "din-editorial",
+      "accentColor": "#10233f",
+      "fontFamily": "IBM Plex Sans",
+      "pageSize": "A4",
+      "fontSize": 10.5,
+      "lineSpacing": 1.42,
+      "sectionSpacing": 14,
+      "letterFontSize": 10.5,
+      "letterLineSpacing": 1.42,
+      "letterParagraphSpacing": 10,
+      "showKeyAchievements": true,
+      "showProjects": false,
+      "showSpecializedCompetencies": false,
+      "packetOrder": "dach"
+    },
+    "assetSettings": {
+      "signature": {
+        "enabled": false,
+        "widthPx": 160,
+        "alignment": "left"
+      },
+      "photo": {
+        "enabled": false,
+        "placement": "header-right",
+        "cropStyle": "portrait-rectangle",
+        "widthPx": 116
+      },
+      "referenceDocIds": []
     }
   }
 ]

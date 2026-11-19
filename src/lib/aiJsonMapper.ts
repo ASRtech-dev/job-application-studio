@@ -1,638 +1,38 @@
-import { ApplicationSchema, type Application, type ExperienceEntry, type ProjectEntry, type SkillGroup } from "./schemas";
+import { normalizePriority, normalizeRisk } from "./applicationEnums";
+import { applyImportContext } from "./ai-import/context";
+import { ApplicationSchema, type Application, type ExperienceEntry, type ProjectEntry } from "@/lib/schemas";
+import { cleanScrapedTitleOrCompany, cleanPlainField, cleanRichTextField, cleanUrlField, cleanKeyword } from "./ai-import/fields";
+import { detectDocumentLanguage } from "./ai-import/language";
+import { normalizeCoreSkills } from "./ai-import/skills";
+import { matchExperienceEntry } from "./ai-import/experience";
+import { localizeApplicationFallbacks } from "./ai-import/localize";
+import { sanitizeApplicationAiContent } from "./ai-import/sanitize";
+import { computeSmartAutoFitSettings } from "./ai-import/readiness";
+import { documentFontSize, pickSmartTemplateDefaults } from "./documentDesign";
+import { EDITORIAL_LIMITS } from "./editorialPolicy";
 
-function cleanKeyword(kw: string): string {
-  if (!kw || typeof kw !== "string") return "";
-  return cleanPlainField(kw).replace(/^[-•·*]\s*/, "").trim();
-}
+export class ImportValidationError extends Error {}
 
-export function cleanScrapedTitleOrCompany(raw: string): string {
-  if (!raw || typeof raw !== "string") return "";
-  return raw
-    .replace(/\b\d+(\.\d+)?\s+\d+(\.\d+)?\s+out of\s+\d+\s+stars\b/gi, "")
-    .replace(/\b\d+(\.\d+)?\s+out of\s+\d+\s+stars\b/gi, "")
-    .replace(/\b(working from home|permanent position|full-time|part-time)\b/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
 
-export function cleanPlainField(text: string): string {
-  if (!text || typeof text !== "string") return "";
-  return text
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
-    .replace(/\*\*([^*]+)\*\*/g, "$1")
-    .replace(/\*([^*]+)\*/g, "$1")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-export function cleanUrlField(text: string): string {
-  if (!text || typeof text !== "string") return "";
-  const mdMatch = text.match(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/);
-  if (mdMatch) {
-    return mdMatch[2].trim();
-  }
-  return text.trim();
-}
-
-export function cleanRichTextField(text: string): string {
-  if (!text || typeof text !== "string") return "";
-  return text
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1")
-    .replace(/^[\s]*[-•·]\s+/, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-export function detectDocumentLanguage(raw: any, fallback: "English" | "Spanish" | "German" = "English"): "English" | "Spanish" | "German" {
-  if (raw?.language && typeof raw.language === "string") {
-    const l = raw.language.trim().toLowerCase();
-    if (l === "german" || l === "deutsch" || l === "de") return "German";
-    if (l === "spanish" || l === "español" || l === "espanol" || l === "es") return "Spanish";
-    if (l === "english" || l === "en") return "English";
-  }
-
-  const cl = raw?.coverLetterContent || raw?.coverLetter || {};
-  const sampleText = [
-    raw?.professionalProfile,
-    raw?.cvContent?.professionalProfile,
-    raw?.headline,
-    raw?.cvContent?.header?.headline,
-    cl?.greeting,
-    cl?.sidebarLabel,
-    ...(Array.isArray(cl?.paragraphs)
-      ? cl.paragraphs.map((p: any) => (typeof p === "string" ? p : p?.text || ""))
-      : []),
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  if (!sampleText) return fallback;
-
-  const germanMatches = (
-    sampleText.match(/\b(und|für|mit|über|durch|sowie|Liebes|Sehr geehrte|ANSCHREIBEN|Erfahrung|Prozess|Kenntnisse|Bewerbung|Unternehmen)\b/gi) || []
-  ).length;
-  const spanishMatches = (
-    sampleText.match(/\b(para|con|los|las|una|por|sobre|experiencia|procesos|empresa|puesto|equipo|Estimado|Atentamente)\b/gi) || []
-  ).length;
-  const englishMatches = (
-    sampleText.match(/\b(the|and|with|for|across|experience|workflows|processes|operations|business|Dear|team)\b/gi) || []
-  ).length;
-
-  if (germanMatches >= 4 && germanMatches > englishMatches) return "German";
-  if (spanishMatches >= 4 && spanishMatches > englishMatches) return "Spanish";
-  if (englishMatches >= 4) return "English";
-
-  return fallback;
-}
-
-function matchExperienceEntry(
-  jExp: any,
-  existingList: ExperienceEntry[],
-  usedIds: Set<string>
-): ExperienceEntry | undefined {
-  const rawId = String(jExp.id || "").toLowerCase().trim();
-  if (rawId) {
-    const byId = existingList.find((e) => e.id.toLowerCase() === rawId && !usedIds.has(e.id));
-    if (byId) return byId;
-  }
-
-  const rawTitle = String(jExp.jobTitle || jExp.title || jExp.role || "").toLowerCase().trim();
-  const rawCompany = String(jExp.company || "").toLowerCase().trim();
-
-  if (rawTitle) {
-    const normalizeTitle = (t: string) => t.replace(/[—–-]/g, " ").replace(/\s+/g, " ").trim();
-    const normRaw = normalizeTitle(rawTitle);
-    const byTitle = existingList.find((e) => {
-      if (usedIds.has(e.id)) return false;
-      const normExisting = normalizeTitle(e.jobTitle.toLowerCase());
-      return normExisting === normRaw || normExisting.includes(normRaw) || normRaw.includes(normExisting);
-    });
-    if (byTitle) return byTitle;
-  }
-
-  if (rawCompany) {
-    const companyMatches = existingList.filter(
-      (e) =>
-        !usedIds.has(e.id) &&
-        (e.company.toLowerCase().includes(rawCompany) || rawCompany.includes(e.company.toLowerCase()))
-    );
-    if (companyMatches.length === 1) {
-      return companyMatches[0];
-    }
-  }
-
-  return undefined;
-}
-
-function normalizeCoreSkills(rawSkills: any): SkillGroup[] | null {
-  if (!rawSkills) return null;
-
-  let groups: SkillGroup[] = [];
-
-  if (Array.isArray(rawSkills)) {
-    groups = rawSkills
-      .map((item: any) => {
-        if (!item) return null;
-        if (typeof item === "string") {
-          const parts = item.split(":");
-          if (parts.length >= 2) {
-            return {
-              group: cleanPlainField(parts[0]),
-              skills: parts
-                .slice(1)
-                .join(":")
-                .split(/\s*[|,;•·]\s*/)
-                .map(cleanPlainField)
-                .filter(Boolean),
-            };
-          }
-          return {
-            group: "Core Competencies",
-            skills: item.split(/\s*[|,;•·]\s*/).map(cleanPlainField).filter(Boolean),
-          };
-        }
-        if (typeof item === "object") {
-          const groupName = cleanPlainField(item.group || item.category || item.name || item.title || "Skills");
-          const rawList = Array.isArray(item.skills)
-            ? item.skills
-            : Array.isArray(item.items)
-            ? item.items
-            : typeof item.skills === "string"
-            ? [item.skills]
-            : [];
-          const expandedSkills = rawList
-            .flatMap((s: any) => String(s || "").split(/\s*[|;•]\s*/))
-            .map((s: string) => cleanPlainField(s))
-            .filter(Boolean);
-          return { group: groupName, skills: expandedSkills };
-        }
-        return null;
-      })
-      .filter((g): g is SkillGroup => Boolean(g && g.skills.length > 0));
-  } else if (typeof rawSkills === "object") {
-    groups = Object.entries(rawSkills)
-      .map(([key, val]) => {
-        const groupName = cleanPlainField(
-          key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-        );
-        const rawList = Array.isArray(val) ? val : typeof val === "string" ? [val] : [];
-        const expandedSkills = rawList
-          .flatMap((s: any) => String(s || "").split(/\s*[|;•]\s*/))
-          .map((s: string) => cleanPlainField(s))
-          .filter(Boolean);
-        return { group: groupName, skills: expandedSkills };
-      })
-      .filter((g) => g.skills.length > 0);
-  }
-
-  if (groups.length === 0) return null;
-
-  const seenGlobal = new Set<string>();
-  return groups.slice(0, 4).map((g) => {
-    const uniqueSkills: string[] = [];
-    for (const sk of g.skills) {
-      const cleaned = sk
-        .replace(/\s+(Adaptability|Learning Readiness|Awareness)$/i, "")
-        .trim();
-      const key = cleaned.toLowerCase();
-      if (cleaned && !seenGlobal.has(key)) {
-        seenGlobal.add(key);
-        uniqueSkills.push(cleaned);
-      }
-    }
-    return {
-      group: g.group,
-      skills: uniqueSkills.slice(0, 6),
-    };
-  }).filter((g) => g.skills.length > 0);
-}
-
-const AI_CLICHE_PATTERNS: Array<{ pattern: RegExp; replacement: string; label: string }> = [
-  { pattern: /\bspearheaded\b/gi, replacement: "led", label: "spearheaded" },
-  { pattern: /\bspearheading\b/gi, replacement: "leading", label: "spearheading" },
-  { pattern: /\borchestrated\b/gi, replacement: "built", label: "orchestrated" },
-  { pattern: /\borchestrating\b/gi, replacement: "coordinating", label: "orchestrating" },
-  { pattern: /\bsynergized\b/gi, replacement: "aligned", label: "synergized" },
-  { pattern: /\bcatalyzed\b/gi, replacement: "accelerated", label: "catalyzed" },
-  { pattern: /\brevolutionized\b/gi, replacement: "redesigned", label: "revolutionized" },
-  { pattern: /\bpioneered\b/gi, replacement: "launched", label: "pioneered" },
-  { pattern: /\bleveraged\b/gi, replacement: "used", label: "leveraged" },
-  { pattern: /\bleveraging\b/gi, replacement: "using", label: "leveraging" },
-  { pattern: /\butilized\b/gi, replacement: "used", label: "utilized" },
-  { pattern: /\butilizing\b/gi, replacement: "using", label: "utilizing" },
-  { pattern: /\bdelved into\b/gi, replacement: "analyzed", label: "delved into" },
-  { pattern: /\bdelving into\b/gi, replacement: "analyzing", label: "delving into" },
-  { pattern: /\b(?:seamlessly|holistically|meticulously|relentlessly|tirelessly)\s+(?:and|or)\s+/gi, replacement: "", label: "adverb+conjunction" },
-  { pattern: /\s+(?:and|or)\s+(?:seamlessly|holistically|meticulously|relentlessly|tirelessly)\b/gi, replacement: "", label: "conjunction+adverb" },
-  { pattern: /\bseamlessly\s+/gi, replacement: "", label: "seamlessly" },
-  { pattern: /\bholistically\s+/gi, replacement: "", label: "holistically" },
-  { pattern: /\bmeticulously\s+/gi, replacement: "", label: "meticulously" },
-  { pattern: /\brelentlessly\s+/gi, replacement: "", label: "relentlessly" },
-  { pattern: /\btirelessly\s+/gi, replacement: "", label: "tirelessly" },
-];
-
-export function sanitizeAiText(text: string): string {
-  if (!text) return "";
-  let out = text;
-  for (const { pattern, replacement } of AI_CLICHE_PATTERNS) {
-    out = out.replace(pattern, (match) => {
-      if (!replacement) return "";
-      const isCapitalized = match[0] === match[0].toUpperCase() && match[0] !== match[0].toLowerCase();
-      if (isCapitalized) {
-        return replacement.charAt(0).toUpperCase() + replacement.slice(1);
-      }
-      return replacement;
-    });
-  }
-  out = out.replace(
-    /\b(interact|work|collaborate|communicate|operate|integrate)\s+and\s+(efficiently|effectively|accurately|reliably|autonomously|securely)\b/gi,
-    "$1 $2"
-  );
-  out = out.replace(/^\s*([a-z])/, (_, c) => c.toUpperCase());
-  return out.replace(/\s{2,}/g, " ").trim();
-}
-
-const CONSECUTIVE_VERB_ALTERNATIVES: Record<string, string[]> = {
-  built: ["Architected", "Engineered", "Developed", "Implemented"],
-  designed: ["Architected", "Structured", "Formulated", "Engineered"],
-  created: ["Developed", "Established", "Produced", "Engineered"],
-  developed: ["Engineered", "Built", "Implemented", "Architected"],
-  implemented: ["Deployed", "Executed", "Operationalized", "Integrated"],
-  led: ["Directed", "Steered", "Guided", "Managed"],
-  managed: ["Directed", "Oversaw", "Governed", "Coordinated"],
-};
-
-export function deduplicateConsecutiveBulletVerbs(bullets: string[]): string[] {
-  if (!Array.isArray(bullets) || bullets.length < 2) return bullets;
-  const result: string[] = [];
-  let prevVerb = "";
-  let altCounter = 0;
-
-  for (const bullet of bullets) {
-    const match = bullet.match(/^([A-Za-zÀ-ÿ-]+)(\s+.*)$/);
-    if (!match) {
-      result.push(bullet);
-      prevVerb = "";
-      continue;
-    }
-    const firstWord = match[1];
-    const rest = match[2];
-    const lowerVerb = firstWord.toLowerCase();
-
-    if (lowerVerb === prevVerb && CONSECUTIVE_VERB_ALTERNATIVES[lowerVerb]) {
-      const alternatives = CONSECUTIVE_VERB_ALTERNATIVES[lowerVerb];
-      const replacement = alternatives[altCounter % alternatives.length];
-      altCounter++;
-      result.push(`${replacement}${rest}`);
-      prevVerb = replacement.toLowerCase();
-    } else {
-      result.push(bullet);
-      prevVerb = lowerVerb;
-    }
-  }
-  return result;
-}
-
-const STOPWORDS = new Set([
-  "with", "from", "that", "this", "into", "over", "across", "through", "while", "using",
-  "used", "under", "between", "within", "including", "their", "your", "para", "como",
-  "entre", "desde", "sobre", "durch", "über", "unter", "sowie", "oder", "und", "the", "and", "for"
-]);
-
-function getSignificantTokens(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/\*\*/g, "")
-    .replace(/[^\p{L}\p{N}\s%]/gu, " ")
-    .split(/\s+/)
-    .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
-}
-
-function computeTokenOverlap(a: string, b: string): number {
-  const tokensA = getSignificantTokens(a);
-  const tokensB = new Set(getSignificantTokens(b));
-  if (tokensA.length === 0 || tokensB.size === 0) return 0;
-  let shared = 0;
-  for (const t of tokensA) {
-    if (tokensB.has(t)) shared++;
-  }
-  return shared / Math.min(tokensA.length, tokensB.size);
-}
-
-export function deduplicateAchievementsAgainstExperience(app: Application): void {
-  const achievements = app.cvContent.keyAchievements || [];
-  if (achievements.length === 0) return;
-
-  const expBullets = (app.cvContent.experience || [])
-    .filter((e) => e.include !== false)
-    .flatMap((e) => e.bullets || []);
-
-  if (expBullets.length === 0) {
-    app.cvContent.keyAchievements = achievements.slice(0, 4);
-    return;
-  }
-
-  const scored = achievements.map((ach, idx) => {
-    const maxOverlap = Math.max(0, ...expBullets.map((eb) => computeTokenOverlap(ach, eb)));
-    return { ach, idx, maxOverlap };
-  });
-
-  const nonDuplicate = scored.filter((item) => item.maxOverlap < 0.88).map((item) => item.ach);
-  const targetMin = Math.min(achievements.length, 3);
-
-  if (nonDuplicate.length >= targetMin) {
-    app.cvContent.keyAchievements = nonDuplicate.slice(0, 4);
-  } else {
-    const sortedByUniqueness = [...scored]
-      .sort((a, b) => a.maxOverlap - b.maxOverlap || a.idx - b.idx)
-      .slice(0, Math.min(achievements.length, 4))
-      .sort((a, b) => a.idx - b.idx)
-      .map((item) => item.ach);
-    app.cvContent.keyAchievements = sortedByUniqueness;
-  }
-}
-
-export function sanitizeApplicationAiContent(app: Application): Application {
-  const copy = JSON.parse(JSON.stringify(app)) as Application;
-  copy.cvContent.header.headline = sanitizeAiText(copy.cvContent.header.headline);
-  copy.cvContent.professionalProfile = sanitizeAiText(copy.cvContent.professionalProfile);
-  copy.cvContent.keyAchievements = deduplicateConsecutiveBulletVerbs(
-    (copy.cvContent.keyAchievements || []).map(sanitizeAiText)
-  );
-  copy.cvContent.experience = (copy.cvContent.experience || []).map((exp) => ({
-    ...exp,
-    summary: exp.summary ? sanitizeAiText(exp.summary) : exp.summary,
-    bullets: deduplicateConsecutiveBulletVerbs((exp.bullets || []).map(sanitizeAiText)),
-  }));
-  copy.cvContent.projects = (copy.cvContent.projects || []).map((proj) => ({
-    ...proj,
-    description: proj.description ? sanitizeAiText(proj.description) : proj.description,
-    bullets: deduplicateConsecutiveBulletVerbs((proj.bullets || []).map(sanitizeAiText)),
-  }));
-  copy.coverLetterContent.positioningLine = sanitizeAiText(copy.coverLetterContent.positioningLine);
-  copy.coverLetterContent.paragraphs = (copy.coverLetterContent.paragraphs || []).map((p) => ({
-    ...p,
-    text: sanitizeAiText(p.text),
-  }));
-  deduplicateAchievementsAgainstExperience(copy);
-  return copy;
-}
-
-export function computeSmartAutoFitSettings(app: Application): {
-  fontSize: number;
-  lineSpacing: number;
-  sectionSpacing: number;
-} {
-  const showAch = app.templateSettings?.showKeyAchievements !== false;
-  const showProj = app.templateSettings?.showProjects !== false;
-
-  const profileWords = (app.cvContent.professionalProfile || "").split(/\s+/).filter(Boolean).length;
-  const achBullets = showAch ? (app.cvContent.keyAchievements || []) : [];
-  const expBullets = (app.cvContent.experience || [])
-    .filter((e) => e.include !== false)
-    .flatMap((e) => e.bullets || []);
-  const projBullets = showProj
-    ? (app.cvContent.projects || [])
-        .filter((p) => p.include !== false)
-        .flatMap((p) => p.bullets || [])
-    : [];
-
-  const allBullets = [...achBullets, ...expBullets, ...projBullets];
-  const bulletWords = allBullets.join(" ").split(/\s+/).filter(Boolean).length;
-  const skillWords = (app.cvContent.coreSkills || [])
-    .flatMap((g) => [g.group, ...(g.skills || [])])
-    .join(" ")
-    .split(/\s+/)
-    .filter(Boolean).length;
-
-  const totalWords = profileWords + bulletWords + skillWords + 65;
-  const totalBullets = allBullets.length;
-
-  if (totalWords <= 340 && totalBullets <= 10) {
-    return { fontSize: 10.2, lineSpacing: 1.34, sectionSpacing: 13 };
-  }
-  if (totalWords <= 430 && totalBullets <= 13) {
-    return { fontSize: 10, lineSpacing: 1.3, sectionSpacing: 11 };
-  }
-  if (totalWords <= 510 && totalBullets <= 16) {
-    return { fontSize: 9.7, lineSpacing: 1.25, sectionSpacing: 10 };
-  }
-  return { fontSize: 9.4, lineSpacing: 1.22, sectionSpacing: 9 };
-}
-
-export function analyzeApplicationReadiness(app: Application): {
-  totalCvWords: number;
-  totalLetterWords: number;
-  totalBullets: number;
-  longBulletsCount: number;
-  aiBuzzwordsFound: string[];
-  duplicateAchievementsCount: number;
-} {
-  const showAch = app.templateSettings?.showKeyAchievements !== false;
-  const showProj = app.templateSettings?.showProjects !== false;
-
-  const achBullets = showAch ? (app.cvContent.keyAchievements || []) : [];
-  const expBullets = (app.cvContent.experience || [])
-    .filter((e) => e.include !== false)
-    .flatMap((e) => e.bullets || []);
-  const projBullets = showProj
-    ? (app.cvContent.projects || [])
-        .filter((p) => p.include !== false)
-        .flatMap((p) => p.bullets || [])
-    : [];
-
-  const allBullets = [...achBullets, ...expBullets, ...projBullets];
-  const longBulletsCount = allBullets.filter(
-    (b) => b.replace(/\*\*/g, "").split(/\s+/).filter(Boolean).length > 20
-  ).length;
-
-  const cvFullText = [
-    app.cvContent.header.headline,
-    app.cvContent.professionalProfile,
-    ...allBullets,
-    ...(app.cvContent.coreSkills || []).flatMap((g) => [g.group, ...g.skills]),
-  ].join(" ");
-
-  const letterFullText = (app.coverLetterContent.paragraphs || []).map((p) => p.text).join(" ");
-
-  const totalCvWords = cvFullText.split(/\s+/).filter(Boolean).length + 55;
-  const totalLetterWords = letterFullText.split(/\s+/).filter(Boolean).length;
-
-  const combinedText = `${cvFullText} ${letterFullText}`;
-  const aiBuzzwordsFound: string[] = [];
-  for (const { pattern, label } of AI_CLICHE_PATTERNS) {
-    pattern.lastIndex = 0;
-    if (pattern.test(combinedText)) {
-      aiBuzzwordsFound.push(label);
-    }
-  }
-
-  let duplicateAchievementsCount = 0;
-  for (const ach of achBullets) {
-    const maxOverlap = Math.max(0, ...expBullets.map((eb) => computeTokenOverlap(ach, eb)));
-    if (maxOverlap >= 0.62) duplicateAchievementsCount++;
-  }
-
-  return {
-    totalCvWords,
-    totalLetterWords,
-    totalBullets: allBullets.length,
-    longBulletsCount,
-    aiBuzzwordsFound,
-    duplicateAchievementsCount,
-  };
-}
-
-function localizeDateRange(dateStr: string, lang: "English" | "Spanish" | "German"): string {
-  if (!dateStr) return "";
-  if (lang === "German") {
-    return dateStr
-      .replace(/\bJan\b/g, "Jan.")
-      .replace(/\bFeb\b/g, "Feb.")
-      .replace(/\bMar\b/g, "März")
-      .replace(/\bApr\b/g, "Apr.")
-      .replace(/\bMay\b/g, "Mai")
-      .replace(/\bJun\b/g, "Juni")
-      .replace(/\bJul\b/g, "Juli")
-      .replace(/\bAug\b/g, "Aug.")
-      .replace(/\bSep\b/g, "Sep.")
-      .replace(/\bOct\b/g, "Okt.")
-      .replace(/\bNov\b/g, "Nov.")
-      .replace(/\bDec\b/g, "Dez.")
-      .replace(/\bPresent\b/gi, "Heute")
-      .replace(/\bCurrent\b/gi, "Heute");
-  }
-  if (lang === "Spanish") {
-    return dateStr
-      .replace(/\bJan\b/g, "Ene.")
-      .replace(/\bApr\b/g, "Abr.")
-      .replace(/\bAug\b/g, "Ago.")
-      .replace(/\bDec\b/g, "Dic.")
-      .replace(/\bPresent\b/gi, "Actualidad")
-      .replace(/\bCurrent\b/gi, "Actualidad");
-  }
-  return dateStr;
-}
-
-function localizeLocation(loc: string, lang: "English" | "Spanish" | "German"): string {
-  if (!loc) return "";
-  if (lang === "German") {
-    return loc
-      .replace(/\bBerlin,\s*Germany\b/gi, "Berlin, Deutschland")
-      .replace(/\bGermany\b/gi, "Deutschland")
-      .replace(/\bSpain\b/gi, "Spanien");
-  }
-  if (lang === "Spanish") {
-    return loc
-      .replace(/\bBerlin,\s*Germany\b/gi, "Berlín, Alemania")
-      .replace(/\bGermany\b/gi, "Alemania")
-      .replace(/\bSpain\b/gi, "España");
-  }
-  return loc;
-}
-
-function localizeProjectRole(role: string, lang: "English" | "Spanish" | "German"): string {
-  if (!role) return "";
-  if (lang === "German") {
-    return role
-      .replace(/\bAI Automation Engineer\b/gi, "KI-Automatisierungsingenieur")
-      .replace(/\bLead Builder\b/gi, "Lead-Architekt & Entwickler")
-      .replace(/\bCreator\s*&\s*Developer\b/gi, "Entwickler & Architekt")
-      .replace(/\bCo-Creator\s*&\s*Product Builder\b/gi, "Co-Entwickler & Produktarchitekt");
-  }
-  if (lang === "Spanish") {
-    return role
-      .replace(/\bAI Automation Engineer\b/gi, "Ingeniero de Automatización IA")
-      .replace(/\bLead Builder\b/gi, "Arquitecto y Desarrollador Principal")
-      .replace(/\bCreator\s*&\s*Developer\b/gi, "Creador y Desarrollador")
-      .replace(/\bCo-Creator\s*&\s*Product Builder\b/gi, "Co-Creador y Desarrollador de Producto");
-  }
-  return role;
-}
-
-function localizeApplicationFallbacks(app: Application): void {
-  const lang = app.language;
-  const roleLabel = app.roleTitle || app.coverLetterContent.roleTitle || "Open Position";
-
-  if (app.coverLetterContent.greeting) {
-    app.coverLetterContent.greeting = app.coverLetterContent.greeting
-      .replace(/\bhiring team\b/g, "Hiring Team")
-      .replace(/\brecruiting team\b/g, "Recruiting Team");
-  }
-
-  app.cvContent.header.location = localizeLocation(app.cvContent.header.location, lang);
-  app.cvContent.experience = (app.cvContent.experience || []).map((exp) => ({
-    ...exp,
-    dates: localizeDateRange(exp.dates, lang),
-    location: localizeLocation(exp.location, lang),
-  }));
-  app.cvContent.projects = (app.cvContent.projects || []).map((proj) => ({
-    ...proj,
-    dates: localizeDateRange(proj.dates, lang),
-    role: localizeProjectRole(proj.role, lang),
-  }));
-
-  if (lang === "German") {
-    if (!app.coverLetterContent.closingPhrase || app.coverLetterContent.closingPhrase === "Kind regards,") {
-      app.coverLetterContent.closingPhrase = "Mit freundlichen Grüßen";
-    }
-    if (!app.coverLetterContent.sidebarLabel || app.coverLetterContent.sidebarLabel === "COVER LETTER") {
-      app.coverLetterContent.sidebarLabel = "ANSCHREIBEN";
-    }
-    if (
-      !app.coverLetterContent.subjectLine ||
-      app.coverLetterContent.subjectLine.startsWith("Application for ")
-    ) {
-      app.coverLetterContent.subjectLine = `Bewerbung als ${roleLabel}`;
-    }
-    if (app.cvContent.header.availability === "Available immediately") {
-      app.cvContent.header.availability = "Sofort verfügbar";
-    }
-  } else if (lang === "Spanish") {
-    if (!app.coverLetterContent.closingPhrase || app.coverLetterContent.closingPhrase === "Kind regards,") {
-      app.coverLetterContent.closingPhrase = "Atentamente,";
-    }
-    if (!app.coverLetterContent.sidebarLabel || app.coverLetterContent.sidebarLabel === "COVER LETTER") {
-      app.coverLetterContent.sidebarLabel = "CARTA DE PRESENTACIÓN";
-    }
-    if (
-      !app.coverLetterContent.subjectLine ||
-      app.coverLetterContent.subjectLine.startsWith("Application for ")
-    ) {
-      app.coverLetterContent.subjectLine = `Candidatura al puesto de ${roleLabel}`;
-    }
-    if (app.cvContent.header.availability === "Available immediately") {
-      app.cvContent.header.availability = "Disponibilidad inmediata";
-    }
-  } else {
-    if (!app.coverLetterContent.subjectLine) {
-      app.coverLetterContent.subjectLine = `Application for ${roleLabel}`;
-    }
-  }
-}
-
-function normalizePriority(val: any): "low" | "medium" | "high" | "strategic" {
-  const s = String(val || "").toLowerCase().trim();
-  if (s.includes("strategic") || s.includes("veryhigh") || s.includes("very high") || s.includes("very_high")) return "strategic";
-  if (s.includes("high")) return "high";
-  if (s.includes("low")) return "low";
-  return "medium";
-}
-
-function normalizeRisk(val: any): "Low" | "Medium" | "High" {
-  const s = String(val || "").toLowerCase().trim();
-  if (s === "low-medium" || s === "medium") return "Medium";
-  if (s.includes("high")) return "High";
-  return "Low";
-}
-
+/**
+ * Normalizes and maps any raw LLM JSON input (full schema, partial CV fields, cover letter paragraphs)
+ * to an Application while preserving the selected evidence and explicit omissions.
+ * Missing collection fields inherit the draft; supplied arrays replace that selection.
+ */
 export function normalizeImportedAIJson(raw: any, existing: Application, rawText?: string): Application {
   if (!raw || typeof raw !== "object") {
     throw new Error("Pasted JSON is not an object.");
   }
 
+  // Deep clone existing draft to preserve original data
   const updated = JSON.parse(JSON.stringify(existing)) as Application;
+  // Confirmed draft values (from the master CV) that partial imports inherit.
+  const baseAvailability = {
+    headerAvailability: existing.cvContent.header.availability ?? "",
+    answerAvailability: existing.formFieldAnswers?.availability ?? "",
+  };
 
+  // 1. Basic properties + scraping cleanup
   if (raw.company && typeof raw.company === "string") {
     updated.company = cleanScrapedTitleOrCompany(cleanPlainField(raw.company));
   }
@@ -648,14 +48,21 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     }
   }
 
+  // Detect language automatically from JSON content or explicit field
   updated.language = detectDocumentLanguage(raw, updated.language || "English");
 
   if (raw.jobDescription && typeof raw.jobDescription === "string") updated.jobDescription = raw.jobDescription;
+  if (typeof raw.jobPostingUrl === "string" && raw.jobPostingUrl.trim()) updated.jobPostingUrl = cleanUrlField(raw.jobPostingUrl);
+  if (typeof raw.jobPostingId === "string" && raw.jobPostingId.trim()) updated.jobPostingId = cleanPlainField(raw.jobPostingId);
+  if (typeof raw.applicationDeadline === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.applicationDeadline.trim())) {
+    updated.applicationDeadline = raw.applicationDeadline.trim();
+  }
   if (raw.notes && typeof raw.notes === "string") updated.notes = raw.notes;
   if (raw.recruiterContact && typeof raw.recruiterContact === "string") updated.recruiterContact = cleanPlainField(raw.recruiterContact);
   if (raw.salaryOffer && typeof raw.salaryOffer === "string") updated.salaryOffer = cleanPlainField(raw.salaryOffer);
   if (raw.interviewDate && typeof raw.interviewDate === "string") updated.interviewDate = raw.interviewDate;
 
+  // 2. Nested Content check (Full / Old Export format) vs Partial Flat Format
   const sourceCv = raw.cvContent && typeof raw.cvContent === "object" ? raw.cvContent : raw;
 
   if (sourceCv.header && typeof sourceCv.header === "object") {
@@ -674,16 +81,17 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     updated.cvContent.keyAchievements = sourceCv.keyAchievements
       .map((a: any) => cleanRichTextField(String(a)))
       .filter(Boolean)
-      .slice(0, 4);
+      .slice(0, EDITORIAL_LIMITS.maxAchievements);
   }
 
-  const normalizedSkills = normalizeCoreSkills(sourceCv.coreSkills || sourceCv.skills);
-  if (normalizedSkills) {
+  const normalizedSkills = normalizeCoreSkills(sourceCv.coreSkills ?? sourceCv.skills);
+  if (normalizedSkills !== null) {
     updated.cvContent.coreSkills = normalizedSkills;
   }
 
-  const rawExpList = sourceCv.experience || sourceCv.professionalExperience;
-  if (Array.isArray(rawExpList) && rawExpList.length > 0) {
+  // 3. Deterministic Experience Mapping (Collision-Free for Multi-Role Tenures)
+  const rawExpList = sourceCv.experience ?? sourceCv.professionalExperience;
+  if (Array.isArray(rawExpList)) {
     const usedIds = new Set<string>();
     const resultExperiences: ExperienceEntry[] = [];
 
@@ -691,67 +99,121 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
       if (!jExp || typeof jExp !== "object") continue;
       if (jExp.include === false) continue;
 
+      // An ID supplied twice is still one selected role, not a reason to fall
+      // through to title matching and overwrite a sibling role at the same employer.
+      const incomingId = String(jExp.id || "").trim().toLowerCase();
+      if (incomingId && [...usedIds].some((id) => id.toLowerCase() === incomingId)) continue;
+
       const matched = matchExperienceEntry(jExp, updated.cvContent.experience, usedIds);
       const rawBullets = Array.isArray(jExp.bullets)
-        ? jExp.bullets.map((b: any) => cleanRichTextField(String(b))).filter(Boolean)
-        : [];
+        ? jExp.bullets.map((b: unknown) => cleanRichTextField(String(b))).filter(Boolean)
+        : undefined;
 
       if (matched) {
         usedIds.add(matched.id);
-        const bulletCap = resultExperiences.length === 0 ? 4 : 2;
         resultExperiences.push({
           ...matched,
-          jobTitle: jExp.jobTitle ? cleanPlainField(jExp.jobTitle) : matched.jobTitle,
-          company: jExp.company ? cleanPlainField(jExp.company) : matched.company,
-          location: jExp.location ? cleanPlainField(jExp.location) : matched.location,
-          dates: jExp.dates ? cleanPlainField(jExp.dates) : matched.dates,
-          summary: typeof jExp.summary === "string" ? cleanRichTextField(jExp.summary) : "",
-          bullets: rawBullets.length > 0 ? rawBullets.slice(0, bulletCap) : matched.bullets.slice(0, bulletCap),
+          ...(jExp.include === true ? { include: true } : {}),
+          jobTitle: typeof jExp.jobTitle === "string" ? cleanPlainField(jExp.jobTitle) : matched.jobTitle,
+          company: typeof jExp.company === "string" ? cleanPlainField(jExp.company) : matched.company,
+          location: typeof jExp.location === "string" ? cleanPlainField(jExp.location) : matched.location,
+          dates: typeof jExp.dates === "string" ? cleanPlainField(jExp.dates) : matched.dates,
+          ...(typeof jExp.summary === "string"
+            ? { summary: cleanRichTextField(jExp.summary) }
+            : {}),
+          bullets: rawBullets ?? matched.bullets,
         });
       } else if (jExp.company || jExp.jobTitle) {
         const newId = jExp.id || "exp_" + Math.random().toString(36).substring(2, 9);
         usedIds.add(newId);
         resultExperiences.push({
           id: newId,
-          jobTitle: cleanPlainField(jExp.jobTitle || "Specialist"),
+          jobTitle: cleanPlainField(jExp.jobTitle || ""),
           company: cleanPlainField(jExp.company || ""),
-          location: cleanPlainField(jExp.location || "City, Country"),
+          location: cleanPlainField(jExp.location || ""),
           dates: jExp.dates && jExp.dates !== "Dates" ? cleanPlainField(jExp.dates) : "",
           summary: jExp.summary ? cleanRichTextField(jExp.summary) : "",
-          bullets: rawBullets.slice(0, 2),
+          ...(jExp.include === true ? { include: true } : {}),
+          bullets: rawBullets ?? [],
         });
       }
     }
 
-    if (resultExperiences.length > 0) {
-      updated.cvContent.experience = resultExperiences;
-    }
+    // The array is the selected list, including an intentional empty selection.
+    // Never refill it with roles the chatbot deliberately excluded or omitted.
+    updated.cvContent.experience = resultExperiences;
   }
 
-  const rawProjList = sourceCv.projects || sourceCv.selectedProjects;
-  if (Array.isArray(rawProjList) && rawProjList.length > 0) {
+  // 4. Deterministic Projects Mapping (Respect include:false and never inject "Dates")
+  const rawProjList = sourceCv.projects ?? sourceCv.selectedProjects;
+  if (Array.isArray(rawProjList)) {
     const updatedProjects: ProjectEntry[] = [];
+    const usedProjIds = new Set<string>();
+
     for (const jProj of rawProjList) {
-      if (!jProj || typeof jProj !== "object" || !jProj.title) continue;
+      if (!jProj || typeof jProj !== "object") continue;
       if (jProj.include === false) continue;
 
+      const rawProjId = String(jProj.id || "").toLowerCase().trim();
+      if (rawProjId && [...usedProjIds].some((id) => id.toLowerCase() === rawProjId)) continue;
+      const titleLower = String(jProj.title || "").toLowerCase();
+      const match = updated.cvContent.projects.find(
+        (p) =>
+          !usedProjIds.has(p.id) &&
+          ((rawProjId && p.id.toLowerCase() === rawProjId) ||
+            (titleLower && (p.title.toLowerCase().includes(titleLower) ||
+              titleLower.includes(p.title.toLowerCase().replace(/\s*\(.*?\)\s*/g, "")))))
+      );
+
       const cleanBullets = Array.isArray(jProj.bullets)
-        ? jProj.bullets.map((b: any) => cleanRichTextField(String(b))).filter(Boolean).slice(0, 2)
-        : [];
+        ? jProj.bullets.map((b: unknown) => cleanRichTextField(String(b))).filter(Boolean)
+        : undefined;
 
-      updatedProjects.push({
-        id: jProj.id || "proj_" + Math.random().toString(36).substring(2, 9),
-        title: cleanPlainField(jProj.title),
-        role: jProj.role ? cleanPlainField(String(jProj.role)) : "Lead",
-        dates: jProj.dates && jProj.dates !== "Dates" && jProj.dates !== "Period" ? cleanPlainField(String(jProj.dates)) : "",
-        description: jProj.description ? cleanRichTextField(String(jProj.description)) : "",
-        bullets: cleanBullets.slice(0, 2),
-      });
+      if (match) {
+        usedProjIds.add(match.id);
+        const cleanDates =
+          typeof jProj.dates === "string" && jProj.dates !== "Dates" && jProj.dates !== "Period"
+            ? cleanPlainField(String(jProj.dates))
+            : match.dates !== "Dates" && match.dates !== "Period"
+            ? match.dates
+            : "";
+
+        updatedProjects.push({
+          ...match,
+          ...(jProj.include === true ? { include: true } : {}),
+          title: typeof jProj.title === "string" ? cleanPlainField(jProj.title) : match.title,
+          role: typeof jProj.role === "string" ? cleanPlainField(jProj.role) : match.role,
+          dates: cleanDates,
+          description: typeof jProj.description === "string" ? cleanRichTextField(jProj.description) : match.description,
+          bullets: cleanBullets ?? match.bullets,
+          ...(typeof jProj.url === "string" && jProj.url.trim() ? { url: cleanUrlField(jProj.url) } : {}),
+          ...(typeof jProj.repoUrl === "string" && jProj.repoUrl.trim() ? { repoUrl: cleanUrlField(jProj.repoUrl) } : {}),
+          ...(typeof jProj.demoUrl === "string" && jProj.demoUrl.trim() ? { demoUrl: cleanUrlField(jProj.demoUrl) } : {}),
+          ...(Array.isArray(jProj.techStack) ? { techStack: jProj.techStack.map((t: unknown) => cleanPlainField(String(t))).filter(Boolean) } : {}),
+        });
+      } else if (jProj.title) {
+        const rawDates =
+          jProj.dates && jProj.dates !== "Dates" && jProj.dates !== "Period"
+            ? cleanPlainField(String(jProj.dates))
+            : "";
+
+        updatedProjects.push({
+          id: jProj.id || "proj_" + Math.random().toString(36).substring(2, 9),
+          title: cleanPlainField(jProj.title),
+          role: typeof jProj.role === "string" ? cleanPlainField(jProj.role) : "",
+          dates: rawDates,
+          description: jProj.description ? cleanRichTextField(String(jProj.description)) : "",
+          ...(jProj.include === true ? { include: true } : {}),
+          bullets: cleanBullets ?? [],
+          ...(typeof jProj.url === "string" && jProj.url.trim() ? { url: cleanUrlField(jProj.url) } : {}),
+          ...(typeof jProj.repoUrl === "string" && jProj.repoUrl.trim() ? { repoUrl: cleanUrlField(jProj.repoUrl) } : {}),
+          ...(typeof jProj.demoUrl === "string" && jProj.demoUrl.trim() ? { demoUrl: cleanUrlField(jProj.demoUrl) } : {}),
+          ...(Array.isArray(jProj.techStack) ? { techStack: jProj.techStack.map((t: unknown) => cleanPlainField(String(t))).filter(Boolean) } : {}),
+        });
+      }
     }
 
-    if (updatedProjects.length > 0) {
-      updated.cvContent.projects = updatedProjects.slice(0, 2);
-    }
+    updated.cvContent.projects = updatedProjects;
   }
 
   if (sourceCv.education && Array.isArray(sourceCv.education)) {
@@ -760,31 +222,38 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
   if (sourceCv.certifications && Array.isArray(sourceCv.certifications)) {
     updated.cvContent.certifications = sourceCv.certifications;
   }
+  const rawSpecComp = sourceCv.specializedCompetencies ?? raw.specializedCompetencies;
+  if (Array.isArray(rawSpecComp)) {
+    updated.cvContent.specializedCompetencies = Array.from(
+      new Set(rawSpecComp.map((c: unknown) => cleanPlainField(String(c))).filter(Boolean))
+    );
+  }
 
+  // 5. Cover Letter fields mapper (keep the chosen paragraph structure intact)
   updated.coverLetterContent.company = updated.company;
   updated.coverLetterContent.roleTitle = updated.roleTitle;
 
   const coverLetterObj = raw.coverLetterContent || raw.coverLetter;
   if (coverLetterObj && typeof coverLetterObj === "object") {
     const cl = coverLetterObj;
-    if (cl.subjectLine && typeof cl.subjectLine === "string") {
+    if (typeof cl.subjectLine === "string") {
       updated.coverLetterContent.subjectLine = cleanPlainField(cl.subjectLine);
     }
-    if (cl.positioningLine && typeof cl.positioningLine === "string") {
+    if (typeof cl.positioningLine === "string") {
       updated.coverLetterContent.positioningLine = cleanPlainField(cl.positioningLine);
     } else if (updated.cvContent.header.headline) {
       updated.coverLetterContent.positioningLine = updated.cvContent.header.headline;
     }
-    if (cl.dateLine && typeof cl.dateLine === "string") {
+    if (typeof cl.dateLine === "string") {
       updated.coverLetterContent.dateLine = cleanPlainField(cl.dateLine);
     }
-    if (cl.greeting && typeof cl.greeting === "string") {
+    if (typeof cl.greeting === "string") {
       updated.coverLetterContent.greeting = cleanPlainField(cl.greeting);
     }
-    if (cl.closingPhrase && typeof cl.closingPhrase === "string") {
+    if (typeof cl.closingPhrase === "string") {
       updated.coverLetterContent.closingPhrase = cleanPlainField(cl.closingPhrase);
     }
-    if (cl.signatureName && typeof cl.signatureName === "string") {
+    if (typeof cl.signatureName === "string") {
       updated.coverLetterContent.signatureName = cleanPlainField(cl.signatureName);
     }
 
@@ -803,21 +272,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
       updated.coverLetterContent.sidebarCompany = cleanScrapedTitleOrCompany(cleanPlainField(sCompany));
     }
 
-    if (cl.paragraphs && Array.isArray(cl.paragraphs)) {
-      const rawTexts = cl.paragraphs
-        .map((p: any) => (typeof p === "string" ? cleanRichTextField(p) : cleanRichTextField(p?.text || "")))
-        .filter(Boolean);
-
-      let finalTexts = rawTexts;
-      if (rawTexts.length > 5) {
-        const opening = rawTexts[0];
-        const evidence = rawTexts[1];
-        const fit = rawTexts[2];
-        const closing = rawTexts[rawTexts.length - 1];
-        const mergedContribution = rawTexts.slice(3, rawTexts.length - 1).join(" ");
-        finalTexts = [opening, evidence, fit, mergedContribution, closing];
-      }
-
+    if (Array.isArray(cl.paragraphs)) {
       const paragraphTypes: Array<"opening" | "evidence" | "fit" | "contribution" | "closing"> = [
         "opening",
         "evidence",
@@ -825,36 +280,23 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
         "contribution",
         "closing",
       ];
-
-      updated.coverLetterContent.paragraphs = finalTexts.map((text: string, idx: number) => ({
-        type:
-          idx === finalTexts.length - 1
-            ? "closing"
-            : paragraphTypes[idx] || "contribution",
-        text,
+      const paragraphs = cl.paragraphs.map((paragraph: unknown) => {
+        const entry = typeof paragraph === "object" && paragraph !== null ? paragraph as Record<string, unknown> : {};
+        const text = typeof paragraph === "string" ? paragraph : typeof entry.text === "string" ? entry.text : "";
+        const type = paragraphTypes.includes(entry.type as typeof paragraphTypes[number])
+          ? entry.type as typeof paragraphTypes[number]
+          : undefined;
+        return { type, text: cleanRichTextField(text) };
+      }).filter((paragraph: { text: string }) => Boolean(paragraph.text));
+      updated.coverLetterContent.paragraphs = paragraphs.map((paragraph: { type?: typeof paragraphTypes[number]; text: string }, index: number) => ({
+        type: paragraph.type ?? (index === paragraphs.length - 1 ? "closing" : paragraphTypes[index] || "contribution"),
+        text: paragraph.text,
       }));
     }
   }
 
-  localizeApplicationFallbacks(updated);
-
-  const sanitized = sanitizeApplicationAiContent(updated);
-  updated.cvContent = sanitized.cvContent;
-  updated.coverLetterContent = sanitized.coverLetterContent;
-
-  if (raw.templateSettings && typeof raw.templateSettings === "object") {
-    updated.templateSettings = { ...updated.templateSettings, ...raw.templateSettings };
-  } else {
-    const autoFit = computeSmartAutoFitSettings(updated);
-    updated.templateSettings = {
-      ...updated.templateSettings,
-      ...autoFit,
-    };
-  }
-  if (raw.assetSettings && typeof raw.assetSettings === "object") {
-    updated.assetSettings = { ...updated.assetSettings, ...raw.assetSettings };
-  }
-
+  // 6. Strategic analysis fields & portal answers BEFORE localization/sanitization so answers stay synced
+  // A. Role Classification
   const rawClass = raw.roleClassification || raw.roleClassificationStrategy || raw.classification;
   if (rawClass && typeof rawClass === "object") {
     updated.roleClassification = {
@@ -870,8 +312,15 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     };
   }
 
+  // B. Portal Form Answers (strip Markdown links & **bold** so portal paste is 100% clean)
   const rawAnswers = raw.formFieldAnswers || raw.portalFormAnswers || raw.formAnswers || raw.formFields;
   if (rawAnswers && typeof rawAnswers === "object") {
+    const incomingWorkAuth =
+      rawAnswers.workAuthorization !== undefined
+        ? cleanPlainField(String(rawAnswers.workAuthorization))
+        : rawAnswers.workPermitGermany !== undefined
+        ? cleanPlainField(String(rawAnswers.workPermitGermany))
+        : updated.formFieldAnswers.workAuthorization || updated.formFieldAnswers.workPermitGermany;
     updated.formFieldAnswers = {
       shortMotivationMessage: rawAnswers.shortMotivationMessage !== undefined ? cleanPlainField(String(rawAnswers.shortMotivationMessage)) : updated.formFieldAnswers.shortMotivationMessage,
       whyThisRole: rawAnswers.whyThisRole !== undefined ? cleanPlainField(String(rawAnswers.whyThisRole)) : updated.formFieldAnswers.whyThisRole,
@@ -879,17 +328,102 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
       additionalMessage: rawAnswers.additionalMessage !== undefined ? cleanPlainField(String(rawAnswers.additionalMessage)) : updated.formFieldAnswers.additionalMessage,
       availability: rawAnswers.availability !== undefined ? cleanPlainField(String(rawAnswers.availability)) : updated.formFieldAnswers.availability,
       degreeExplanation: rawAnswers.degreeExplanation !== undefined ? cleanPlainField(String(rawAnswers.degreeExplanation)) : updated.formFieldAnswers.degreeExplanation,
+      workAuthorization: incomingWorkAuth,
       workPermitGermany: rawAnswers.workPermitGermany !== undefined ? cleanPlainField(String(rawAnswers.workPermitGermany)) : updated.formFieldAnswers.workPermitGermany,
       website: rawAnswers.website !== undefined ? cleanUrlField(String(rawAnswers.website)) : updated.formFieldAnswers.website,
       linkedin: rawAnswers.linkedin !== undefined ? cleanUrlField(String(rawAnswers.linkedin)) : updated.formFieldAnswers.linkedin,
+      ...(rawAnswers.github !== undefined ? { github: cleanUrlField(String(rawAnswers.github)) } : updated.formFieldAnswers.github !== undefined ? { github: updated.formFieldAnswers.github } : {}),
+      ...(rawAnswers.salaryExpectation !== undefined ? { salaryExpectation: cleanPlainField(String(rawAnswers.salaryExpectation)) } : updated.formFieldAnswers.salaryExpectation !== undefined ? { salaryExpectation: updated.formFieldAnswers.salaryExpectation } : {}),
+      ...(rawAnswers.startDateIso !== undefined ? { startDateIso: cleanPlainField(String(rawAnswers.startDateIso)) } : updated.formFieldAnswers.startDateIso !== undefined ? { startDateIso: updated.formFieldAnswers.startDateIso } : {}),
+      ...(rawAnswers.noticePeriod !== undefined ? { noticePeriod: cleanPlainField(String(rawAnswers.noticePeriod)) } : updated.formFieldAnswers.noticePeriod !== undefined ? { noticePeriod: updated.formFieldAnswers.noticePeriod } : {}),
+      ...(rawAnswers.requiresSponsorship !== undefined ? { requiresSponsorship: cleanPlainField(String(rawAnswers.requiresSponsorship)) } : updated.formFieldAnswers.requiresSponsorship !== undefined ? { requiresSponsorship: updated.formFieldAnswers.requiresSponsorship } : {}),
     };
   }
 
+  // Apply language-aware localization for English / German / Spanish documents
+  localizeApplicationFallbacks(updated, baseAvailability);
+
+  // Sanitize any surviving robotic AI verbs/adverbs and deduplicate Key Achievements against Experience
+  const sanitized = sanitizeApplicationAiContent(updated);
+  updated.cvContent = sanitized.cvContent;
+  updated.coverLetterContent = sanitized.coverLetterContent;
+  updated.roleClassification = sanitized.roleClassification;
+  updated.formFieldAnswers = sanitized.formFieldAnswers;
+
+  // Auto-upgrade legacy untouched factory template defaults when importing a full document
+  const hasFullDocPayload = Boolean(
+    raw.cvContent || raw.coverLetterContent || raw.coverLetter || raw.experience || raw.professionalExperience || raw.professionalProfile
+  );
+  const isUntouchedLegacyDefault =
+    updated.templateSettings.cvTemplate === "ats-clean" &&
+    updated.templateSettings.coverLetterTemplate === "ats-letter" &&
+    (updated.templateSettings.fontFamily === "Inter" || updated.templateSettings.fontFamily === "IBM Plex Sans");
+  const incomingTone = typeof raw?.promptContext?.options?.tonePreset === "string"
+    ? raw.promptContext.options.tonePreset
+    : updated.promptContext?.options?.tonePreset;
+  if (!raw.templateSettings && hasFullDocPayload && isUntouchedLegacyDefault) {
+    updated.templateSettings = {
+      ...updated.templateSettings,
+      ...pickSmartTemplateDefaults(updated.language, incomingTone),
+    };
+  }
+
+  const autoFit = computeSmartAutoFitSettings(updated);
+  if (raw.templateSettings && typeof raw.templateSettings === "object") {
+    const rawTs = raw.templateSettings as Record<string, unknown>;
+    updated.templateSettings = {
+      ...updated.templateSettings,
+      ...raw.templateSettings,
+      fontSize: typeof rawTs.fontSize === "number" ? rawTs.fontSize : autoFit.fontSize,
+      lineSpacing: typeof rawTs.lineSpacing === "number" ? rawTs.lineSpacing : autoFit.lineSpacing,
+      sectionSpacing: typeof rawTs.sectionSpacing === "number" ? rawTs.sectionSpacing : autoFit.sectionSpacing,
+    };
+  } else {
+    // Automatically tune font size, line height, and section spacing based on imported content density
+    updated.templateSettings = {
+      ...updated.templateSettings,
+      letterFontSize: updated.templateSettings.letterFontSize ?? documentFontSize(updated.templateSettings.fontSize, "letter"),
+      ...autoFit,
+    };
+  }
+  if (raw.assetSettings && typeof raw.assetSettings === "object") {
+    const rawAssets = raw.assetSettings as Record<string, unknown>;
+    const mergeAssetBranch = <T extends { filePath?: string }>(current: T, incoming: unknown): T => {
+      if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) return current;
+      const patch = Object.fromEntries(
+        Object.entries(incoming as Record<string, unknown>).filter(([, v]) => v !== undefined)
+      ) as Partial<T>;
+      const merged = { ...current, ...patch };
+      if (typeof patch.filePath === "string" && !patch.filePath.trim()) {
+        if (current.filePath) merged.filePath = current.filePath;
+        else delete merged.filePath;
+      }
+      return merged;
+    };
+    updated.assetSettings = {
+      signature: mergeAssetBranch(updated.assetSettings.signature, rawAssets.signature),
+      photo: mergeAssetBranch(updated.assetSettings.photo, rawAssets.photo),
+    };
+  }
+
+  // C. Salary Positioning (support EUR, USD, hourly and generic keys)
   const rawSalary = raw.salaryPositioning || raw.salary || raw.salaryStrategy;
   if (rawSalary && typeof rawSalary === "object") {
-    const recRange = rawSalary.recommendedRangeEUR ?? rawSalary.recommendedRangeUSD ?? rawSalary.recommendedRange;
-    const safeNum = rawSalary.safeNumberEUR ?? rawSalary.safeNumberUSD ?? rawSalary.safeNumber;
-    const ambNum = rawSalary.ambitiousNumberEUR ?? rawSalary.ambitiousNumberUSD ?? rawSalary.ambitiousNumber;
+    const recRange =
+      rawSalary.recommendedRangeEUR ??
+      rawSalary.recommendedRangeUSD ??
+      rawSalary.recommendedRangeUSDHourly ??
+      rawSalary.recommendedRange;
+    const safeNum =
+      rawSalary.safeNumberEUR ??
+      rawSalary.safeNumberUSD ??
+      rawSalary.safeNumberUSDHourly ??
+      rawSalary.safeNumber;
+    const ambNum =
+      rawSalary.ambitiousNumberEUR ??
+      rawSalary.ambitiousNumberUSD ??
+      rawSalary.ambitiousNumberUSDHourly ??
+      rawSalary.ambitiousNumber;
 
     updated.salaryPositioning = {
       recommendedRangeEUR: recRange !== undefined ? cleanPlainField(String(recRange)) : updated.salaryPositioning.recommendedRangeEUR,
@@ -899,6 +433,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     };
   }
 
+  // D. Keyword Strategy
   const rawKw = raw.keywordStrategy || raw.keywords || raw.keywordStrategyPool;
   if (rawKw && typeof rawKw === "object") {
     updated.keywordStrategy = {
@@ -909,6 +444,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     };
   }
 
+  // E. Recruiter Concern Handling
   const rawConcern = raw.recruiterConcernHandling || raw.recruiterConcerns || raw.concerns;
   if (rawConcern && typeof rawConcern === "object") {
     let list: any[] = [];
@@ -917,7 +453,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     } else if (Array.isArray(rawConcern)) {
       list = rawConcern;
     }
-    if (list.length > 0) {
+    if (Array.isArray(rawConcern.likelyConcerns) || Array.isArray(rawConcern)) {
       updated.recruiterConcernHandling.likelyConcerns = list.map((item: any) => ({
         concern: item.concern !== undefined ? cleanPlainField(String(item.concern)) : "",
         howToNeutralize: item.howToNeutralize !== undefined ? cleanPlainField(String(item.howToNeutralize)) : "",
@@ -926,6 +462,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     }
   }
 
+  // F. Fit Assessment
   const rawFit = raw.fitAssessment || raw.fit || raw.fitScore;
   if (rawFit && typeof rawFit === "object") {
     let score: any = rawFit.scoreOutOf10;
@@ -949,6 +486,7 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     };
   }
 
+  // G. Quality Control
   const rawQc = raw.qualityControl || raw.quality || raw.qc;
   if (rawQc && typeof rawQc === "object") {
     updated.qualityControl = {
@@ -963,19 +501,99 @@ export function normalizeImportedAIJson(raw: any, existing: Application, rawText
     };
   }
 
+  // H. Optional Outreach, Portal Questions, Keyword Placement Plan & Interview Prep
+  if (raw.outreachMessages && typeof raw.outreachMessages === "object") {
+    const om = raw.outreachMessages as Record<string, unknown>;
+    updated.outreachMessages = {
+      ...(typeof om.linkedInConnectionNote === "string" ? { linkedInConnectionNote: cleanPlainField(om.linkedInConnectionNote) } : {}),
+      ...(typeof om.recruiterDirectMessage === "string" ? { recruiterDirectMessage: cleanPlainField(om.recruiterDirectMessage) } : {}),
+      ...(typeof om.hiringManagerNote === "string" ? { hiringManagerNote: cleanPlainField(om.hiringManagerNote) } : {}),
+      ...(typeof om.followUpMessage === "string" ? { followUpMessage: cleanPlainField(om.followUpMessage) } : {}),
+    };
+  }
+  if (Array.isArray(raw.portalQuestionAnswers)) {
+    updated.portalQuestionAnswers = raw.portalQuestionAnswers
+      .filter((item: unknown): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+      .map((item: Record<string, unknown>) => ({
+        question: cleanPlainField(String(item.question || "")),
+        answer: cleanPlainField(String(item.answer || "")),
+      }))
+      .filter((item: { question: string; answer: string }) => Boolean(item.question || item.answer));
+  }
+  if (Array.isArray(raw.keywordPlacementPlan)) {
+    updated.keywordPlacementPlan = raw.keywordPlacementPlan
+      .filter((item: unknown): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+      .map((item: Record<string, unknown>) => ({
+        keyword: cleanKeyword(String(item.keyword || "")),
+        ...(typeof item.priority === "string" ? { priority: cleanPlainField(item.priority) } : {}),
+        ...(typeof item.targetSection === "string" ? { targetSection: cleanPlainField(item.targetSection) } : {}),
+        ...(typeof item.exactSurfaceForm === "string" ? { exactSurfaceForm: cleanPlainField(item.exactSurfaceForm) } : {}),
+      }))
+      .filter((item: { keyword: string }) => Boolean(item.keyword));
+  }
+  if (raw.interviewPrep && typeof raw.interviewPrep === "object") {
+    const ip = raw.interviewPrep as Record<string, unknown>;
+    updated.interviewPrep = {
+      ...(typeof ip.careerArcSummary === "string" ? { careerArcSummary: cleanPlainField(ip.careerArcSummary) } : {}),
+      ...(Array.isArray(ip.questionsToAsk) ? { questionsToAsk: ip.questionsToAsk.map((q: unknown) => cleanPlainField(String(q))).filter(Boolean) } : {}),
+      ...(Array.isArray(ip.callSurvivalNotes) ? { callSurvivalNotes: ip.callSurvivalNotes.map((n: unknown) => cleanPlainField(String(n))).filter(Boolean) } : {}),
+      ...(Array.isArray(ip.starStories) ? {
+        starStories: ip.starStories
+          .filter((s: unknown): s is Record<string, unknown> => Boolean(s && typeof s === "object"))
+          .map((s: Record<string, unknown>) => ({
+            title: cleanPlainField(String(s.title || "")),
+            situation: cleanPlainField(String(s.situation || "")),
+            task: cleanPlainField(String(s.task || "")),
+            action: cleanPlainField(String(s.action || "")),
+            result: cleanPlainField(String(s.result || "")),
+            ...(typeof s.sourceId === "string" ? { sourceId: cleanPlainField(s.sourceId) } : {}),
+            ...(Array.isArray(s.keywords) ? { keywords: s.keywords.map((k: unknown) => cleanKeyword(String(k))).filter(Boolean) } : {}),
+          })),
+      } : {}),
+    };
+  }
+
+  // 7. Set Version and Audit metadata (omit rawImportedAIJson to avoid storing redundant 10-15KB blobs)
   updated.schemaVersion = 2;
   if (rawText !== undefined) {
     updated.importMetadata = {
       timestamp: new Date().toISOString(),
       source: "import-modal",
-      rawImportedAIJson: rawText,
     };
+  } else if (updated.importMetadata?.rawImportedAIJson) {
+    const cleanedMeta = { ...updated.importMetadata };
+    delete cleanedMeta.rawImportedAIJson;
+    updated.importMetadata = cleanedMeta;
   }
 
+  applyImportContext(raw, updated);
+
+  // Backfill posting identity and user salary hint carried via promptContext when not supplied explicitly
+  const ctxOpts = updated.promptContext?.options;
+  if (ctxOpts) {
+    if (!updated.jobPostingUrl && ctxOpts.jobPostingUrl?.trim()) updated.jobPostingUrl = cleanUrlField(ctxOpts.jobPostingUrl);
+    if (!updated.jobPostingId && ctxOpts.jobPostingId?.trim()) updated.jobPostingId = cleanPlainField(ctxOpts.jobPostingId);
+    if (!updated.applicationDeadline && ctxOpts.applicationDeadline && /^\d{4}-\d{2}-\d{2}$/.test(ctxOpts.applicationDeadline.trim())) {
+      updated.applicationDeadline = ctxOpts.applicationDeadline.trim();
+    }
+    if (!updated.formFieldAnswers.salaryExpectation?.trim() && ctxOpts.salaryExpectationHint?.trim()) {
+      updated.formFieldAnswers.salaryExpectation = cleanPlainField(ctxOpts.salaryExpectationHint);
+    }
+  }
+
+  // 8. Validate with Zod and cast back to Application
   const parsed = ApplicationSchema.safeParse(updated);
   if (!parsed.success) {
-    console.warn("Import validation warnings:", parsed.error.format());
-    return updated;
+    throw new ImportValidationError(`Imported content failed validation: ${parsed.error.issues.map(issue => issue.path.join(".")).join(", ")}`);
   }
   return parsed.data;
 }
+
+// Backward-compatible public API. Domain modules import each other directly to
+// keep the normalization pipeline free of circular dependencies.
+export { cleanAIJsonText, parseLooseAIJson } from "./ai-import/json";
+export { cleanScrapedTitleOrCompany, cleanPlainField, cleanUrlField, cleanRichTextField } from "./ai-import/fields";
+export { detectDocumentLanguage } from "./ai-import/language";
+export { sanitizeAiText, deduplicateAchievementsAgainstExperience, sanitizeApplicationAiContent } from "./ai-import/sanitize";
+export { computeSmartAutoFitSettings, analyzeApplicationReadiness } from "./ai-import/readiness";
+export { localizeDateRange, localizeLocation, localizeCertificationName, localizeWorkAuthorization } from "./localization";

@@ -1,0 +1,94 @@
+/* Screen-only application chrome. Never scope these classes around A4 content. */
+@media screen {
+  :root {
+    --ui-bg: #080d18;
+    --ui-panel: #0f172a;
+    --ui-panel-elevated: #142036;
+    --ui-inset: #0a101e;
+    --ui-border: rgba(148, 163, 184, 0.18);
+    --ui-border-strong: rgba(148, 163, 184, 0.28);
+    --ui-text: #eef3fb;
+    --ui-muted: #9fb0c7;
+    --ui-accent: #2563eb;
+    --ui-accent-hover: #1d4ed8;
+    --ui-focus: #93c5fd;
+  }
+  @layer components {
+    .ui-shell { background: var(--ui-bg); min-width: 0; }
+    .ui-panel { background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 14px; box-shadow: 0 1px 2px rgba(2, 6, 23, 0.35); backdrop-filter: none; }
+    .ui-inset { background: var(--ui-inset); border: 1px solid rgba(148, 163, 184, 0.14); box-shadow: none; }
+    .ui-controls { color: var(--ui-text); font-size: 14px; line-height: 1.5; min-width: 0; }
+    .ui-controls :where([class*="text-[9px]"], [class*="text-[10px]"], [class*="text-[11px]"], .text-xs) { font-size: 12px; line-height: 1.45; }
+    .ui-controls :where(label) { font-size: 13px; line-height: 1.5; color: var(--ui-muted); }
+    .ui-controls :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea) {
+      font-size: 14px; line-height: 1.5; background: var(--ui-inset); color: var(--ui-text); border-color: var(--ui-border-strong); max-width: 100%; min-width: 0;
+    }
+    .ui-controls :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select) { min-height: 38px; }
+    .ui-controls :where(button:not([data-swatch])) { min-height: 36px; font-size: 13px; line-height: 1.4; }
+    .ui-controls :where(.text-slate-500, .text-slate-400, [class*="text-[#6b7280]"]) { color: var(--ui-muted); }
+    .ui-controls :where(input, select, textarea, button, a, summary):focus-visible,
+    .ui-button:focus-visible, .ui-focus:focus-visible {
+      outline: 2px solid var(--ui-focus); outline-offset: 2px;
+    }
+    .ui-controls :where(input, select, textarea):focus-visible { border-color: var(--ui-focus); }
+    .ui-controls :where(textarea) { resize: vertical; }
+    .ui-button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 36px; padding: 7px 12px; border: 1px solid var(--ui-border-strong); border-radius: 9px;
+      background: var(--ui-inset); color: var(--ui-text); font-size: 13px; font-weight: 600; line-height: 1.4;
+      box-shadow: none; backdrop-filter: none; transform: none; cursor: pointer;
+      transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    }
+    .ui-button:hover:not(:disabled) { background: #19263d; border-color: rgba(148, 163, 184, 0.42); transform: none; }
+    .ui-button--primary { background: var(--ui-accent); border-color: var(--ui-accent); color: #fff; }
+    .ui-button--primary:hover:not(:disabled) { background: var(--ui-accent-hover); border-color: var(--ui-accent-hover); }
+    .ui-button--secondary { background: rgba(15, 23, 42, 0.7); color: var(--ui-text); }
+    .ui-button[aria-pressed="true"]:not(.ui-button--primary) { background: #1e3a5f; border-color: rgba(96, 165, 250, 0.65); color: #ffffff; }
+    .ui-button--quiet { background: transparent; border-color: transparent; color: var(--ui-muted); }
+    .ui-button--quiet:hover:not(:disabled) { background: rgba(148, 163, 184, 0.1); border-color: transparent; color: #fff; }
+    .ui-button--danger { background: #301923; border-color: #885063; color: #fecdd3; }
+    .ui-button--danger:hover:not(:disabled) { background: #4a1e2c; border-color: #fda4af; }
+    .ui-button--danger-subtle { background: transparent; border-color: transparent; color: var(--ui-muted); }
+    .ui-button--danger-subtle:hover:not(:disabled) { background: rgba(244, 63, 94, 0.14); border-color: rgba(244, 63, 94, 0.35); color: #fda4af; }
+    .ui-button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .ui-controls :where(button, a) { transition-property: background-color, border-color, color, opacity; transition-duration: 150ms; }
+    .ui-controls :where(button, a):active { transform: none; }
+    .ui-editor { height: 100dvh; overflow: hidden; }
+    .ui-editor-header { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 14px 24px; background: rgba(11, 18, 32, 0.94); border-bottom: 1px solid var(--ui-border); backdrop-filter: blur(8px); }
+    .ui-editor-identity { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+    .ui-editor-heading { min-width: 0; flex: 1; }
+    .ui-editor-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .ui-editor-title-row h1 { overflow-wrap: anywhere; font-size: 18px; }
+    .ui-editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; position: relative; }
+    .ui-preview-tabs { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; margin-right: auto; border: 1px solid var(--ui-border); border-radius: 10px; background: var(--ui-inset); }
+    .ui-preview-tabs button { border-radius: 7px; padding: 7px 12px; }
+    .ui-preview-tabs button[aria-pressed="true"] { background: #213b60; color: #fff; }
+    .ui-editor-workspace { display: flex; flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+    .ui-editor-fields { width: 45%; min-width: 0; border-right: 1px solid var(--ui-border); background: var(--ui-inset); display: flex; flex-direction: column; min-height: 0; overflow: hidden; container-type: inline-size; }
+    .ui-editor-form { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px; }
+    .ui-editor-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); }
+    .ui-editor-tabs button { padding: 7px 10px; border-radius: 7px; white-space: normal; text-align: left; }
+    .ui-editor-tabs button[aria-pressed="true"] { background: #213b60; color: #fff; }
+    .ui-editor-menu { width: min(320px, calc(100vw - 32px)); background: var(--ui-panel); border: 1px solid var(--ui-border); box-shadow: 0 12px 32px #0005; }
+    .ui-editor-menu button { white-space: normal; }
+  }
+  @media (max-width: 1199px) {
+    .ui-editor { height: auto; min-height: 100dvh; overflow: visible; }
+    .ui-editor-workspace { display: flex; flex-direction: column; overflow: visible; }
+    .ui-editor-fields { width: 100%; overflow: visible; border-right: 0; border-bottom: 1px solid var(--ui-border); }
+    .ui-editor-form { overflow: visible; }
+    .ui-editor-actions > .ui-preview-tabs { width: 100%; margin-right: 0; }
+  }
+  @media (max-width: 639px) {
+    .ui-editor-header { padding: 12px 16px; }
+    .ui-editor-form { padding: 16px; }
+    .ui-editor-actions { gap: 8px; }
+    .ui-editor-actions > button, .ui-editor-actions > .ui-export-dropdown { position: static; flex: 1 1 42%; min-width: 0; }
+    .ui-export-dropdown > button { width: 100%; }
+    .ui-editor-menu { left: 0; right: 0; width: 100%; }
+    .ui-editor-title-row h1 { flex-basis: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ui-controls *, .ui-button, .ui-toast { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+}

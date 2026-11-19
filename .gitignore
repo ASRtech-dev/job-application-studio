@@ -10,20 +10,24 @@
 
 # Next.js & Build artifacts
 /.next/
+/.next-*/
 /out/
 /build
 /coverage
 *.tsbuildinfo
 next-env.d.ts
 
-# User Personal Data & Generated Exports (NEVER COMMIT)
-/data/*.json
+# User Personal Data, Runtime Stores & Generated Exports (NEVER COMMIT)
+/data/*
 !/data/*.example.json
+!/data/.gitkeep
 /exports/
+/.local/
 /public/uploads/*
 !/public/uploads/.gitkeep
-/public/documents/*.pdf
+/public/documents/*
 !/public/documents/.gitkeep
+/*.pdf
 
 # Secrets, Certificates & Local Env
 .env*

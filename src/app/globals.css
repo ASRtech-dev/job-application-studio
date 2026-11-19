@@ -49,8 +49,26 @@ body {
   }
   
   /* Hide UI elements on printing */
-  header, footer, button, .zoom-controls, .editor-panel, .page-break-indicator {
+  header, footer, nav, button, .zoom-controls, .editor-panel, .page-break-indicator, .ui-editor-header, .ui-editor-fields, .ui-preview-toolbar, .ui-toast {
     display: none !important;
+  }
+
+  .ui-editor, .ui-editor-workspace, .ui-shell, .ui-controls {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    display: block !important;
+  }
+
+  .ui-print-reset {
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
   }
 
   /* Force page dimensions for A4 */
@@ -70,8 +88,10 @@ body {
     widows: 2;
   }
 
-  h2, h3 {
+  h2, h3, .section-heading {
     break-after: avoid !important;
     page-break-after: avoid !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }

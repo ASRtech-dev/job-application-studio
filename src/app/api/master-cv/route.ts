@@ -1,26 +1,22 @@
 import { NextResponse } from "next/server";
 import { loadMasterCv, saveMasterCv } from "@/lib/storage";
 import { MasterCvSchema } from "@/lib/schemas";
+import { guardApiRequest } from "@/lib/requestSecurity";
+import { apiError, readObjectRequest, expectedRevision } from "@/lib/apiErrors";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = guardApiRequest(req); if (denied) return denied;
   try {
     const data = loadMasterCv();
-    return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to load master CV" }, { status: 500 });
-  }
+    return NextResponse.json({ ...data, revision: data.revision ?? 0 });
+  } catch (error) { return apiError(error); }
 }
 
 export async function POST(req: Request) {
+  const denied = guardApiRequest(req, "json"); if (denied) return denied;
   try {
-    const body = await req.json();
-    const parsed = MasterCvSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
-    }
-    saveMasterCv(parsed.data);
-    return NextResponse.json({ success: true, data: parsed.data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to save master CV" }, { status: 500 });
-  }
+    const body = await readObjectRequest(req);
+    const saved = saveMasterCv(MasterCvSchema.parse(body), expectedRevision(body.revision));
+    return NextResponse.json({ success: true, data: saved });
+  } catch (error) { return apiError(error); }
 }

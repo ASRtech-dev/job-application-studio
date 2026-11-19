@@ -1,52 +1,78 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Copy, Check, X, Sparkles, ChevronDown, ChevronUp, Sliders, Award, MessageSquarePlus } from "lucide-react";
+import React, { useEffect, useMemo, useState, useRef, useId } from "react";
+import { Copy, Check, X, Sparkles, ChevronDown, ChevronUp, Sliders, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import {
   buildExpertCommitteePrompt,
-  EMPHASIS_HIGHLIGHT_CATALOG,
-  type EmphasisHighlightId,
+  getCandidateHighlightOptions,
   type PromptBuilderOptions,
+  type StrategyAngle,
+  type TonePreset,
+  type CvLengthMode,
+  type PromptMode,
+  type AddressingMode,
 } from "../lib/promptBuilder";
-import { MasterCv } from "../lib/schemas";
+import { MasterCvSchema, type Application, type ApplicationSummary, type MasterCv } from "../lib/schemas";
+import { copyText } from "../lib/clipboard";
+import { findDuplicateOffers, listPreparations, savePreparation, removePreparation, type OfferPreparation } from "../lib/offerPreparations";
+import { CV_LENGTH_POLICIES } from "../lib/editorialPolicy";
+import { createPromptContext, PENDING_GENERATION_KEY } from "../lib/generationContext";
+import { preScanOffer } from "../lib/offerPreScan";
+import { getAppTimeZone } from "../lib/timeZone";
+import { useDialogFocus } from "../lib/useDialogFocus";
+
+export const PENDING_JD_STORAGE_KEY = "jas_pending_job_description";
 
 interface PromptGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialCompany?: string;
   initialRoleTitle?: string;
-  initialLanguage?: "English" | "German" | "Spanish";
-  candidateProfile?: MasterCv | null;
+  initialLanguage?: PromptBuilderOptions["targetLanguage"];
+  initialJobDescription?: string;
+  initialJobPostingUrl?: string;
+  initialJobPostingId?: string;
+  initialDeadline?: string;
+  initialSalaryHint?: string;
+  existingApplication?: Application | null;
+  applications?: ApplicationSummary[];
+  onJobDescriptionChange?: (jd: string) => void;
 }
 
 const LANGUAGE_OPTIONS: { value: PromptBuilderOptions["targetLanguage"]; label: string }[] = [
-  { value: "auto", label: "Auto (Detect from Job Description)" },
+  { value: "auto", label: "Auto — requested application language, or posting language" },
   { value: "English", label: "English" },
-  { value: "German", label: "Deutsch (DACH)" },
-  { value: "Spanish", label: "Español" },
+  { value: "German", label: "German (Deutsch)" },
+  { value: "Spanish", label: "Spanish (Español)" },
 ];
 
-const ANGLE_OPTIONS: { value: PromptBuilderOptions["strategyAngle"]; label: string }[] = [
-  { value: "auto", label: "🤖 Auto-Detect Best Angle (5-Expert Committee)" },
-  { value: "ai_agents_automation", label: "⚡ AI Agents, LLM Orchestration & n8n/Make Automation" },
-  { value: "process_operations", label: "📐 Business Process Analyst, BPMN 2.0 & Operational Excellence" },
-  { value: "business_steering_six_sigma", label: "📊 Business Steering, Lean Six Sigma & KPI Governance" },
-  { value: "technical_operations_jira", label: "🔧 Technical Operations, Jira/CRM & Incident Bridging" },
-  { value: "quality_governance", label: "⚖️ EU AI Act, Regulatory Compliance & Risk Governance" },
-  { value: "leadership_growth", label: "🚀 Operations Leadership, Scaling & Cross-Functional Delivery" },
+const LANGUAGE_DISPLAY: Record<string, string> = {
+  English: "English",
+  German: "German",
+  Spanish: "Spanish",
+};
+
+const ANGLE_OPTIONS: { value: StrategyAngle; label: string }[] = [
+  { value: "auto", label: "Auto — choose from top job priorities" },
+  { value: "technical_execution", label: "Technical Execution & Systems" },
+  { value: "strategy_leadership", label: "Strategy, Planning & Leadership" },
+  { value: "operations_delivery", label: "Operations, Process & Delivery" },
+  { value: "client_stakeholder", label: "Client, Stakeholder & Commercial" },
+  { value: "governance_compliance", label: "Governance, Quality & Compliance" },
 ];
 
-const TONE_OPTIONS: { value: NonNullable<PromptBuilderOptions["tonePreset"]>; label: string }[] = [
-  { value: "auto", label: "Auto-Calibrate to Company Type" },
-  { value: "hands_on_builder", label: "Hands-On Builder & Technical Operator (Pipelines, APIs, Shipping)" },
-  { value: "internal_consultant", label: "Internal Consultant & Process Architect (Advisory, Discovery, SOPs)" },
-  { value: "executive_operator", label: "Executive Operations & Strategic Steering (Scale, SLAs, ROI)" },
+const TONE_OPTIONS: { value: TonePreset; label: string }[] = [
+  { value: "auto", label: "Auto — match employer tone" },
+  { value: "startup_modern", label: "Modern & Direct (Startups / Scale-ups)" },
+  { value: "enterprise_formal", label: "Formal & Structured (Enterprise / Corporate)" },
+  { value: "technical_direct", label: "Technical & Mechanics-Focused" },
 ];
 
-const LENGTH_OPTIONS: { value: NonNullable<PromptBuilderOptions["cvLengthMode"]>; label: string }[] = [
-  { value: "standard_2page", label: "Executive 2-Page (360–440 words · Recommended)" },
-  { value: "compact_1page", label: "Ultra-Compact 1-Page (280–340 words · Startup / Fast Scan)" },
-  { value: "comprehensive", label: "Comprehensive Technical (420–480 words · Deep Senior Roles)" },
+const LENGTH_OPTIONS: { value: CvLengthMode; label: string }[] = [
+  ...(["auto_clean", "ultra_compact_1p", "comprehensive_2p"] as const).map((value) => ({
+    value,
+    label: `${value === "ultra_compact_1p" ? "Compact" : value === "comprehensive_2p" ? "Detailed" : "Balanced"} · ${CV_LENGTH_POLICIES[value].minWords}–${CV_LENGTH_POLICIES[value].maxWords} words`,
+  })),
 ];
 
 export default function PromptGeneratorModal({
@@ -54,343 +80,778 @@ export default function PromptGeneratorModal({
   onClose,
   initialCompany = "",
   initialRoleTitle = "",
-  initialLanguage,
-  candidateProfile: initialProfile,
+  initialLanguage = "auto",
+  initialJobDescription = "",
+  initialJobPostingUrl = "",
+  initialJobPostingId = "",
+  initialDeadline = "",
+  initialSalaryHint = "",
+  existingApplication = null,
+  applications = [],
+  onJobDescriptionChange,
 }: PromptGeneratorModalProps) {
-  const [profile, setProfile] = useState<MasterCv | null>(initialProfile || null);
-  const [targetLanguage, setTargetLanguage] = useState<PromptBuilderOptions["targetLanguage"]>(
-    initialLanguage || "auto"
-  );
-  const [strategyAngle, setStrategyAngle] = useState<PromptBuilderOptions["strategyAngle"]>("auto");
-  const [tonePreset, setTonePreset] = useState<NonNullable<PromptBuilderOptions["tonePreset"]>>("auto");
-  const [cvLengthMode, setCvLengthMode] = useState<NonNullable<PromptBuilderOptions["cvLengthMode"]>>("standard_2page");
-  const [emphasisHighlights, setEmphasisHighlights] = useState<EmphasisHighlightId[]>([
-    "ai-agents-rag",
-    "process-sops-bpmn",
-    "n8n-make-orchestration",
-  ]);
+  const [targetLanguage, setTargetLanguage] = useState<PromptBuilderOptions["targetLanguage"]>(initialLanguage);
+  const [strategyAngle, setStrategyAngle] = useState<StrategyAngle>("auto");
+  const [tonePreset, setTonePreset] = useState<TonePreset>("auto");
+  const [cvLengthMode, setCvLengthMode] = useState<CvLengthMode>("auto_clean");
+  const [promptMode, setPromptMode] = useState<PromptMode>("full_application");
+  const [includeInterviewPrep, setIncludeInterviewPrep] = useState(false);
+  const [addressingMode, setAddressingMode] = useState<AddressingMode>("auto");
+  const [salaryExpectationHint, setSalaryExpectationHint] = useState(initialSalaryHint);
+  const [screeningQuestionsText, setScreeningQuestionsText] = useState("");
+  const [emphasisHighlights, setEmphasisHighlights] = useState<string[]>([]);
   const [customInstructions, setCustomInstructions] = useState("");
   const [companyHint, setCompanyHint] = useState(initialCompany);
   const [roleTitleHint, setRoleTitleHint] = useState(initialRoleTitle);
-  const [jobDescription, setJobDescription] = useState("");
+  const [jobDescription, setJobDescription] = useState(initialJobDescription);
+  const [preparationId, setPreparationId] = useState<string | null>(null);
+  const [preparations, setPreparations] = useState<OfferPreparation[]>([]);
+  const [jobPostingUrl, setJobPostingUrl] = useState(initialJobPostingUrl);
+  const [jobPostingId, setJobPostingId] = useState(initialJobPostingId);
+  const [applicationDeadline, setApplicationDeadline] = useState(initialDeadline);
+  useEffect(() => {
+    if (!isOpen) return;
+    const frame = requestAnimationFrame(() => setPreparations(listPreparations()));
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen]);
+  const loadPreparation = (id: string) => {
+    const item = preparations.find((entry) => entry.id === id);
+    if (!item) { setPreparationId(null); return; }
+    setPreparationId(item.id);
+    setCompanyHint(item.company);
+    setRoleTitleHint(item.roleTitle);
+    handleJobDescriptionUpdate(item.jobDescription);
+    setJobPostingUrl(item.jobPostingUrl ?? "");
+    setJobPostingId(item.jobPostingId ?? "");
+    setApplicationDeadline(item.applicationDeadline ?? "");
+    setSalaryExpectationHint(item.salaryExpectationHint ?? item.promptContext?.options.salaryExpectationHint ?? "");
+    const options = item.promptContext?.options;
+    if (options) {
+      setTargetLanguage(options.targetLanguage);
+      setStrategyAngle(options.strategyAngle);
+      setTonePreset(options.tonePreset);
+      setCvLengthMode(options.cvLengthMode);
+      setEmphasisHighlights(options.emphasisHighlights ?? []);
+      setCustomInstructions(options.customInstructions ?? "");
+      if (options.promptMode) setPromptMode(options.promptMode);
+      if (options.addressingMode) setAddressingMode(options.addressingMode);
+      setIncludeInterviewPrep(Boolean(options.includeInterviewPrep));
+    }
+  };
+  const [masterCv, setMasterCv] = useState<MasterCv | null>(null);
+  const [masterCvSyncStatus, setMasterCvSyncStatus] = useState<"idle" | "loading" | "synced" | "fallback">("idle");
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const [masterReloadKey, setMasterReloadKey] = useState(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogId = useId();
+  const previousInputsRef = useRef({
+    isOpen: false,
+    initialCompany,
+    initialRoleTitle,
+    initialLanguage,
+    initialJobDescription,
+    initialJobPostingUrl,
+    initialJobPostingId,
+    initialDeadline,
+    initialSalaryHint,
+  });
 
   useEffect(() => {
-    if (initialProfile) {
-      setProfile(initialProfile);
-      return;
+    const previous = previousInputsRef.current;
+    if (isOpen) {
+      if (initialCompany && (!previous.isOpen || previous.initialCompany !== initialCompany)) setCompanyHint(initialCompany);
+      if (initialRoleTitle && (!previous.isOpen || previous.initialRoleTitle !== initialRoleTitle)) setRoleTitleHint(initialRoleTitle);
+      if (!previous.isOpen || previous.initialLanguage !== initialLanguage) setTargetLanguage(initialLanguage);
+      if (initialJobDescription !== "" && (!previous.isOpen || previous.initialJobDescription !== initialJobDescription)) {
+        setJobDescription(initialJobDescription);
+      }
+      if (initialJobPostingUrl && (!previous.isOpen || previous.initialJobPostingUrl !== initialJobPostingUrl)) setJobPostingUrl(initialJobPostingUrl);
+      if (initialJobPostingId && (!previous.isOpen || previous.initialJobPostingId !== initialJobPostingId)) setJobPostingId(initialJobPostingId);
+      if (initialDeadline && (!previous.isOpen || previous.initialDeadline !== initialDeadline)) setApplicationDeadline(initialDeadline);
+      if (initialSalaryHint && (!previous.isOpen || previous.initialSalaryHint !== initialSalaryHint)) setSalaryExpectationHint(initialSalaryHint);
     }
-    if (isOpen && !profile) {
-      fetch("/api/master-cv")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data) setProfile(data);
-        })
-        .catch(() => {});
-    }
-  }, [isOpen, initialProfile, profile]);
+    previousInputsRef.current = {
+      isOpen,
+      initialCompany,
+      initialRoleTitle,
+      initialLanguage,
+      initialJobDescription,
+      initialJobPostingUrl,
+      initialJobPostingId,
+      initialDeadline,
+      initialSalaryHint,
+    };
+  }, [isOpen, initialCompany, initialRoleTitle, initialLanguage, initialJobDescription, initialJobPostingUrl, initialJobPostingId, initialDeadline, initialSalaryHint]);
 
-  const toggleHighlight = (id: EmphasisHighlightId) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const controller = new AbortController();
+    async function loadMaster() {
+      setMasterCvSyncStatus("loading");
+      try {
+        const response = await fetch("/api/master-cv", { signal: controller.signal });
+        if (!response.ok) throw new Error("Master CV unavailable");
+        const profile = MasterCvSchema.safeParse(await response.json());
+        if (!profile.success) throw new Error("Master CV response invalid");
+        if (!controller.signal.aborted) {
+          setMasterCv(profile.data);
+          setMasterCvSyncStatus("synced");
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setMasterCv(null);
+          setMasterCvSyncStatus("fallback");
+        }
+      }
+    }
+    void loadMaster();
+    return () => controller.abort();
+  }, [isOpen, masterReloadKey]);
+
+  useDialogFocus(dialogRef, isOpen, onClose);
+
+  const highlightOptions = useMemo(
+    () => getCandidateHighlightOptions(masterCv || undefined),
+    [masterCv]
+  );
+
+  const handleJobDescriptionUpdate = (nextJd: string) => {
+    setJobDescription(nextJd);
+    if (onJobDescriptionChange) {
+      onJobDescriptionChange(nextJd);
+    }
+    try {
+      if (nextJd.trim()) {
+        localStorage.setItem(
+          PENDING_JD_STORAGE_KEY,
+          JSON.stringify({
+            jobDescription: nextJd,
+            companyHint: companyHint.trim(),
+            roleTitleHint: roleTitleHint.trim(),
+            updatedAt: Date.now(),
+          })
+        );
+      } else if (!onJobDescriptionChange) {
+        localStorage.removeItem(PENDING_JD_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  };
+
+  const toggleHighlight = (key: string) => {
     setEmphasisHighlights((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   };
 
-  const selectAllHighlights = () => {
-    setEmphasisHighlights(EMPHASIS_HIGHLIGHT_CATALOG.map((h) => h.id));
-  };
+  const selectAllHighlights = () => setEmphasisHighlights(highlightOptions.map((item) => item.id));
+  const clearHighlights = () => setEmphasisHighlights([]);
 
-  const clearHighlights = () => {
-    setEmphasisHighlights([]);
-  };
-
-  const prompt = useMemo(
-    () =>
-      buildExpertCommitteePrompt({
-        targetLanguage,
-        strategyAngle,
-        tonePreset,
-        cvLengthMode,
-        emphasisHighlights,
-        customInstructions: customInstructions.trim() || undefined,
-        companyHint: companyHint.trim() || undefined,
-        roleTitleHint: roleTitleHint.trim() || undefined,
-        jobDescription,
-        candidateProfile: profile || undefined,
-      }),
-    [
-      targetLanguage,
-      strategyAngle,
-      tonePreset,
-      cvLengthMode,
-      emphasisHighlights,
-      customInstructions,
-      companyHint,
-      roleTitleHint,
-      jobDescription,
-      profile,
-    ]
+  const screeningQuestions = useMemo(
+    () => screeningQuestionsText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
+    [screeningQuestionsText]
   );
+
+  const promptOptions = useMemo<PromptBuilderOptions>(() => ({
+    promptMode,
+    includeInterviewPrep,
+    addressingMode,
+    generatedAt: new Date().toISOString(),
+    targetLanguage,
+    strategyAngle,
+    tonePreset,
+    cvLengthMode,
+    emphasisHighlights,
+    customInstructions: customInstructions.trim() || undefined,
+    screeningQuestions: screeningQuestions.length ? screeningQuestions : undefined,
+    companyHint: companyHint.trim() || undefined,
+    roleTitleHint: roleTitleHint.trim() || undefined,
+    jobPostingUrl: jobPostingUrl.trim() || undefined,
+    jobPostingId: jobPostingId.trim() || undefined,
+    applicationDeadline: applicationDeadline || undefined,
+    salaryExpectationHint: salaryExpectationHint.trim() || undefined,
+    jobDescription,
+    masterCv: masterCv || undefined,
+    existingApplication: existingApplication || undefined,
+  }), [
+    targetLanguage, promptMode, includeInterviewPrep, addressingMode,
+    strategyAngle, tonePreset, cvLengthMode, emphasisHighlights, customInstructions,
+    screeningQuestions, companyHint, roleTitleHint, jobPostingUrl, jobPostingId,
+    applicationDeadline, salaryExpectationHint, jobDescription, masterCv, existingApplication,
+  ]);
+  const preScan = useMemo(() => preScanOffer(jobDescription, masterCv || undefined), [jobDescription, masterCv]);
+  const prompt = useMemo(() => buildExpertCommitteePrompt(promptOptions), [promptOptions]);
+  const earlyDuplicates = useMemo(() => {
+    if (!isOpen || !applications.length || (!companyHint.trim() && !roleTitleHint.trim() && !jobDescription.trim() && !jobPostingUrl.trim() && !jobPostingId.trim())) {
+      return [];
+    }
+    return findDuplicateOffers(
+      {
+        company: companyHint,
+        roleTitle: roleTitleHint,
+        jobDescription,
+        jobPostingUrl,
+        jobPostingId,
+      },
+      applications
+    );
+  }, [isOpen, applications, companyHint, roleTitleHint, jobDescription, jobPostingUrl, jobPostingId]);
 
   if (!isOpen) return null;
 
+  const isCvTailoringMode = promptMode === "full_application";
+  const showGermanAddressing = targetLanguage === "German" || targetLanguage === "auto" || preScan.detectedLanguage === "German";
+  const appTimeZone = getAppTimeZone();
+
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(prompt);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = prompt;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
+    const outcome = await copyText(prompt);
+    if (outcome !== "copied") {
+      setCopyFailed(true);
+      return;
     }
+    setCopyFailed(false);
+    const context = createPromptContext(promptOptions);
+    try {
+      localStorage.setItem(PENDING_GENERATION_KEY, JSON.stringify(context));
+      handleJobDescriptionUpdate(jobDescription);
+    } catch {
+      // ignore
+    }
+    const now = new Date().toISOString();
+    const id = preparationId ?? (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `prep-${Date.now()}`);
+    const existing = preparations.find((item) => item.id === id);
+    const prepPayload: OfferPreparation = {
+      id, createdAt: existing?.createdAt ?? now, updatedAt: now,
+      company: companyHint.trim(), roleTitle: roleTitleHint.trim(), jobDescription,
+      ...(jobPostingUrl.trim() ? { jobPostingUrl: jobPostingUrl.trim() } : {}),
+      ...(jobPostingId.trim() ? { jobPostingId: jobPostingId.trim() } : {}),
+      ...(applicationDeadline ? { applicationDeadline } : {}),
+      ...(salaryExpectationHint.trim() ? { salaryExpectationHint: salaryExpectationHint.trim() } : {}),
+      ...(existing?.triageResult ? { triageResult: existing.triageResult } : {}),
+      promptContext: context,
+    };
+    setPreparations(savePreparation(prepPayload));
+    void fetch("/api/preparations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(prepPayload),
+    }).catch(() => {});
+    setPreparationId(id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
   const fieldClass =
-    "w-full px-3 py-2 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white focus:outline-none focus:border-[#6d8ead] transition-colors text-xs";
-  const labelClass = "text-[10px] uppercase font-bold text-[#6d8ead] mb-1 block tracking-wider";
+    "w-full min-w-0 px-3 py-2 rounded-lg bg-[var(--ui-inset)] border border-[var(--ui-border-strong)] text-white text-sm";
+  const labelClass = "text-xs font-medium text-slate-300 mb-1.5 block";
+  const stepBoxClass = "rounded-xl border border-[var(--ui-border)] bg-[var(--ui-inset)]/70 p-4 space-y-3.5 mb-4";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl max-h-[93vh] overflow-y-auto rounded-2xl border border-[#1f2937] bg-[#0e162d] p-6 shadow-2xl relative">
+    <div className="ui-shell ui-controls fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`${dialogId}-title`} tabIndex={-1} className="ui-panel w-full max-w-4xl max-h-[94vh] overflow-y-auto rounded-2xl p-5 sm:p-6 relative">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#10233f] transition-colors"
+          className="ui-button ui-button--quiet absolute right-4 top-4 p-1.5"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-5 h-5 text-[#6d8ead]" />
-          <h3 className="text-lg font-bold text-white">
-            AI Master Prompt Studio (5-Expert Committee Engine)
+        <div className="flex flex-wrap items-center gap-2 mb-1 pr-10">
+          <h3 id={`${dialogId}-title`} className="text-lg font-semibold text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-blue-300" />
+            Generate AI prompt
           </h3>
+          {masterCvSyncStatus === "synced" && masterCv && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-semibold">
+              Master CV loaded ({masterCv.achievementsPool.length} {masterCv.achievementsPool.length === 1 ? "achievement" : "achievements"} · {masterCv.educationHistory.length} education)
+            </span>
+          )}
+          {masterCvSyncStatus === "loading" && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200 font-semibold">
+              Loading Master CV…
+            </span>
+          )}
         </div>
-        <p className="text-xs text-[#6b7280] mb-5 max-w-2xl">
-          Customize how the 5-Expert Hiring Committee builds your tailored application JSON. Select your strategic angle, tone, density, and priority career achievements, then paste the generated prompt into Gemini, Claude, or ChatGPT.
+        {masterCvSyncStatus === "fallback" && (
+          <div role="status" className="text-xs text-amber-300 mb-3">
+            <p>Could not load your saved Master CV. The default profile template will be used instead — verify your profile before continuing.</p>
+            <button type="button" onClick={() => setMasterReloadKey((value) => value + 1)} className="ui-button ui-button--secondary mt-1 underline">
+              Retry loading Master CV
+            </button>
+          </div>
+        )}
+        <p className="text-xs text-slate-400 mb-4 max-w-3xl">
+          Step by step: paste the full job posting, review the local pre-scan, copy the prompt into your AI chat, and then import the JSON output under <strong className="text-white">New Application → Import JSON</strong>.
         </p>
 
-        {/* Row 1: Core Strategy & Language */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
-          <div>
-            <label className={labelClass}>1. Output Language</label>
-            <select
-              value={targetLanguage}
-              onChange={(e) => setTargetLanguage(e.target.value as PromptBuilderOptions["targetLanguage"])}
-              className={`${fieldClass} cursor-pointer`}
-            >
-              {LANGUAGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+        {/* STEP 1: Offer, Saved Preparations & Pre-Scan */}
+        <section className={stepBoxClass} aria-label="Step 1: Job posting and context">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-300">1. Job posting & known context</span>
+            {preparations.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+                <select
+                  id={`${dialogId}-preparation`}
+                  aria-label="Saved preparations"
+                  value={preparationId ?? ""}
+                  onChange={(e) => (e.target.value ? loadPreparation(e.target.value) : setPreparationId(null))}
+                  className="min-w-0 max-w-xs px-2.5 py-1.5 rounded-lg bg-[var(--ui-panel)] border border-[var(--ui-border-strong)] text-white text-xs"
+                >
+                  <option value="">New preparation or choose saved…</option>
+                  {preparations.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {[
+                        item.company || "Untitled company",
+                        item.roleTitle || "untitled role",
+                        item.triageResult?.applyOrSkip ? `${item.triageResult.applyOrSkip}${typeof item.triageResult.scoreOutOf10 === "number" ? ` (${item.triageResult.scoreOutOf10}/10)` : ""}` : null,
+                        new Date(item.updatedAt).toLocaleDateString("en-US", { timeZone: appTimeZone }),
+                      ].filter(Boolean).join(" · ")}
+                    </option>
+                  ))}
+                </select>
+                {preparationId && (
+                  <button
+                    type="button"
+                    className="ui-button ui-button--quiet text-xs"
+                    onClick={() => { setPreparations(removePreparation(preparationId)); setPreparationId(null); }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className={labelClass}>2. Primary Positioning Angle</label>
-            <select
-              value={strategyAngle}
-              onChange={(e) => setStrategyAngle(e.target.value as PromptBuilderOptions["strategyAngle"])}
-              className={`${fieldClass} cursor-pointer`}
-            >
-              {ANGLE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {(() => {
+            const selectedTriage = preparations.find((p) => p.id === preparationId)?.triageResult;
+            if (!selectedTriage) return null;
+            return (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-100 space-y-1">
+                <p className="font-semibold">
+                  Saved triage: {selectedTriage.applyOrSkip || "Evaluated"}
+                  {typeof selectedTriage.scoreOutOf10 === "number" ? ` · ${selectedTriage.scoreOutOf10}/10` : ""}
+                  {selectedTriage.probabilityTier ? ` (${selectedTriage.probabilityTier})` : ""}
+                </p>
+                {selectedTriage.summary && <p className="text-slate-200">{selectedTriage.summary}</p>}
+              </div>
+            );
+          })()}
 
           <div>
-            <label className={labelClass}>
-              <span className="inline-flex items-center gap-1">
-                <Sliders className="w-3 h-3" /> 3. Seniority & Tone Calibration
-              </span>
+            <label htmlFor={`${dialogId}-description`} className={labelClass}>
+              Full job description
             </label>
-            <select
-              value={tonePreset}
-              onChange={(e) => setTonePreset(e.target.value as NonNullable<PromptBuilderOptions["tonePreset"]>)}
-              className={`${fieldClass} cursor-pointer`}
-            >
-              {TONE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClass}>4. Target CV Density</label>
-            <select
-              value={cvLengthMode}
-              onChange={(e) => setCvLengthMode(e.target.value as NonNullable<PromptBuilderOptions["cvLengthMode"]>)}
-              className={`${fieldClass} cursor-pointer`}
-            >
-              {LENGTH_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClass}>Target Company (Optional)</label>
-            <input
-              type="text"
-              value={companyHint}
-              onChange={(e) => setCompanyHint(e.target.value)}
-              placeholder="Auto-extracted from Job Description if left blank"
-              className={fieldClass}
+            <textarea
+              id={`${dialogId}-description`}
+              data-autofocus="true"
+              rows={5}
+              aria-label="Full job description"
+              value={jobDescription}
+              onChange={(e) => handleJobDescriptionUpdate(e.target.value)}
+              placeholder="Paste the complete job posting text here…"
+              className="min-w-0 w-full p-3 rounded-xl bg-[var(--ui-panel)] border border-[var(--ui-border-strong)] text-white text-xs font-mono focus:border-[#6d8ead] leading-normal resize-y"
             />
           </div>
 
-          <div>
-            <label className={labelClass}>Target Role Title (Optional)</label>
-            <input
-              type="text"
-              value={roleTitleHint}
-              onChange={(e) => setRoleTitleHint(e.target.value)}
-              placeholder="Auto-extracted from Job Description if left blank"
-              className={fieldClass}
-            />
-          </div>
-        </div>
+          {preScan.wordCount > 0 && (
+            <div className="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-panel)] p-3 text-xs space-y-2">
+              <div className="flex flex-wrap items-center gap-2 text-slate-300">
+                <span className="font-bold text-blue-300">Local pre-scan ({preScan.wordCount} {preScan.wordCount === 1 ? "word" : "words"}):</span>
+                {preScan.detectedLanguage && (
+                  targetLanguage !== preScan.detectedLanguage ? (
+                    <button
+                      type="button"
+                      onClick={() => setTargetLanguage(preScan.detectedLanguage!)}
+                      className="px-2 py-0.5 rounded bg-blue-500/15 border border-blue-400/30 text-blue-200 hover:bg-blue-500/25 cursor-pointer"
+                      title="Use detected language in selector"
+                    >
+                      Detected language: {LANGUAGE_DISPLAY[preScan.detectedLanguage] || preScan.detectedLanguage} (apply)
+                    </button>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded bg-[#10233f] text-slate-200">
+                      Language: {LANGUAGE_DISPLAY[preScan.detectedLanguage] || preScan.detectedLanguage}
+                    </span>
+                  )
+                )}
+                {preScan.mentionsLanguageRequirement.length > 0 && (
+                  <span className="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/35 text-amber-200 font-medium">
+                    Language requirement noted ({preScan.mentionsLanguageRequirement.join(", ")}) — verify before drafting
+                  </span>
+                )}
+                {preScan.detectedSalaryBand && (
+                  salaryExpectationHint.trim() ? (
+                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      Posted salary: {preScan.detectedSalaryBand}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSalaryExpectationHint(preScan.detectedSalaryBand!)}
+                      className="px-2 py-0.5 rounded bg-blue-500/15 border border-blue-500/30 text-blue-200 hover:bg-blue-500/25 cursor-pointer"
+                    >
+                      Detected salary: {preScan.detectedSalaryBand} (use as reference)
+                    </button>
+                  )
+                )}
+                {preScan.detectedAddressing && addressingMode === "auto" && (
+                  <button
+                    type="button"
+                    onClick={() => setAddressingMode(preScan.detectedAddressing!)}
+                    className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 hover:bg-slate-700 cursor-pointer"
+                  >
+                    German tone: {preScan.detectedAddressing === "du" ? "Du" : "Sie"} (apply)
+                  </button>
+                )}
+              </div>
+              {(preScan.matchedInMaster.length > 0 || preScan.missingFromMaster.length > 0) && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {preScan.matchedInMaster.length > 0 && (
+                    <span className="text-emerald-300">
+                      ✓ In Master CV ({preScan.matchedInMaster.length}): {preScan.matchedInMaster.slice(0, 8).join(", ")}
+                      {preScan.matchedInMaster.length > 8 ? ` (+${preScan.matchedInMaster.length - 8} more)` : ""}
+                    </span>
+                  )}
+                  {preScan.missingFromMaster.length > 0 && (
+                    <span className="text-amber-300">
+                      ! Not matched verbatim ({preScan.missingFromMaster.length}): {preScan.missingFromMaster.slice(0, 6).join(", ")}
+                      {preScan.missingFromMaster.length > 6 ? ` (+${preScan.missingFromMaster.length - 6} more)` : ""}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* Row 2: Interactive Career Highlights Selector */}
-        <div className="mb-4 rounded-xl border border-[#1f2937] bg-[#0a0f1d]/80 p-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-            <label className="text-[10px] uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
-              <Award className="w-3.5 h-3.5" />
-              5. Priority Career Highlights & Competencies ({emphasisHighlights.length} active)
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={selectAllHighlights}
-                className="text-[10px] font-semibold text-[#6d8ead] hover:text-white transition-colors"
-              >
-                Select All
-              </button>
-              <span className="text-slate-600">·</span>
-              <button
-                type="button"
-                onClick={clearHighlights}
-                className="text-[10px] font-semibold text-slate-400 hover:text-white transition-colors"
-              >
-                Clear
-              </button>
+          {earlyDuplicates.length > 0 && (
+            <div role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-100 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Possible duplicate application in your history:</p>
+                <ul className="list-disc pl-4 mt-0.5">
+                  {earlyDuplicates.map((d) => {
+                    const match = applications.find((a) => a.id === d.id);
+                    return <li key={d.id}>{d.reason}: {match ? `${match.company} · ${match.roleTitle}` : d.id}</li>;
+                  })}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor={`${dialogId}-company`} className={labelClass}>Company (optional)</label>
+              <input
+                id={`${dialogId}-company`}
+                type="text"
+                value={companyHint}
+                onChange={(e) => setCompanyHint(e.target.value)}
+                placeholder="Leave blank to extract from the posting"
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label htmlFor={`${dialogId}-role`} className={labelClass}>Role title (optional)</label>
+              <input
+                id={`${dialogId}-role`}
+                type="text"
+                value={roleTitleHint}
+                onChange={(e) => setRoleTitleHint(e.target.value)}
+                placeholder="Leave blank to extract from the posting"
+                className={fieldClass}
+              />
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 mb-2.5">
-            Select 2 to 5 core milestones that best match this job offer so the LLM prioritizes them in your Profile, Key Achievements, and Cover Letter:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {EMPHASIS_HIGHLIGHT_CATALOG.map((item) => {
-              const active = emphasisHighlights.includes(item.id);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => toggleHighlight(item.id)}
-                  className={`text-left px-3 py-2 rounded-lg border text-xs transition-all flex items-start gap-2 ${
-                    active
-                      ? "bg-[#10233f] border-[#6d8ead] text-white shadow-sm"
-                      : "bg-[#0e162d]/50 border-[#1f2937] text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                  }`}
+
+          <details className="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-panel)]/60 px-3 py-2">
+            <summary className="cursor-pointer text-xs font-medium text-slate-300">
+              Optional posting metadata (URL, job ID, or deadline)
+            </summary>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label htmlFor={`${dialogId}-posting-url`} className={labelClass}>Posting URL</label>
+                <input id={`${dialogId}-posting-url`} type="url" value={jobPostingUrl} onChange={(e) => setJobPostingUrl(e.target.value)} className={fieldClass} />
+              </div>
+              <div>
+                <label htmlFor={`${dialogId}-posting-id`} className={labelClass}>Job ID</label>
+                <input id={`${dialogId}-posting-id`} type="text" value={jobPostingId} onChange={(e) => setJobPostingId(e.target.value)} className={fieldClass} />
+              </div>
+              <div>
+                <label htmlFor={`${dialogId}-deadline`} className={labelClass}>Application deadline</label>
+                <input id={`${dialogId}-deadline`} type="date" value={applicationDeadline} onChange={(e) => setApplicationDeadline(e.target.value)} className={fieldClass} />
+              </div>
+            </div>
+          </details>
+        </section>
+
+        {/* STEP 2: Prompt Mode, Language & Salary */}
+        <section className={stepBoxClass} aria-label="Step 2: Core settings">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-300 block">2. Prompt mode, language & preferences</span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label htmlFor={`${dialogId}-mode`} className={labelClass}>Prompt mode</label>
+              <select
+                id={`${dialogId}-mode`}
+                value={promptMode}
+                onChange={(e) => setPromptMode(e.target.value as PromptMode)}
+                className={`${fieldClass} cursor-pointer`}
+              >
+                <option value="full_application">Full application (CV + Cover Letter + Strategy)</option>
+                <option value="triage_only">Quick triage (fit check before drafting · 30s)</option>
+                <option value="outreach_only">Outreach messages & portal Q&A</option>
+                <option value="interview_prep">STAR interview prep only (from your CV)</option>
+              </select>
+              {promptMode === "full_application" && (
+                <label className="mt-2 flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeInterviewPrep}
+                    onChange={(e) => setIncludeInterviewPrep(e.target.checked)}
+                    className="rounded border-slate-600"
+                  />
+                  Include STAR interview guide in the same JSON (+4 KB; by default generated separately after finalizing CV)
+                </label>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor={`${dialogId}-language`} className={labelClass}>Document language</label>
+              <select
+                id={`${dialogId}-language`}
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value as PromptBuilderOptions["targetLanguage"])}
+                className={`${fieldClass} cursor-pointer`}
+              >
+                {LANGUAGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {showGermanAddressing && (
+              <div>
+                <label htmlFor={`${dialogId}-addressing`} className={labelClass}>German addressing (Sie / Du)</label>
+                <select
+                  id={`${dialogId}-addressing`}
+                  value={addressingMode}
+                  onChange={(e) => setAddressingMode(e.target.value as AddressingMode)}
+                  className={`${fieldClass} cursor-pointer`}
                 >
-                  <span
-                    className={`mt-0.5 w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                      active ? "bg-emerald-500 text-black" : "border border-slate-600 text-transparent"
-                    }`}
-                  >
-                    ✓
-                  </span>
-                  <span className="leading-snug">{item.label}</span>
-                </button>
-              );
-            })}
+                  <option value="auto">Auto (formal Sie by default)</option>
+                  <option value="sie">Formal (Sie · Sehr geehrte...)</option>
+                  <option value="du">Informal (Du · Hallo...)</option>
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor={`${dialogId}-salary-hint`} className={labelClass}>Salary expectation if requested (optional)</label>
+              <input
+                id={`${dialogId}-salary-hint`}
+                type="text"
+                value={salaryExpectationHint}
+                onChange={(e) => setSalaryExpectationHint(e.target.value)}
+                placeholder="e.g., $85,000–$100,000 or €60,000–€70,000"
+                className={fieldClass}
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Row 3: Custom Instructions / Special Notes */}
-        <div className="mb-4">
-          <label className={labelClass}>
-            <span className="inline-flex items-center gap-1">
-              <MessageSquarePlus className="w-3 h-3" /> 6. Custom Instructions / Context Override (Optional)
-            </span>
-          </label>
-          <input
-            type="text"
-            value={customInstructions}
-            onChange={(e) => setCustomInstructions(e.target.value)}
-            placeholder="e.g. Emphasize B2B SaaS onboarding, logistics partners, or address a specific requirement..."
-            className={fieldClass}
-          />
-        </div>
+        {/* STEP 3: Fine-tuning (Collapsible) */}
+        <details className="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-inset)]/70 p-4 mb-4" open={emphasisHighlights.length > 0 || Boolean(customInstructions.trim() || screeningQuestionsText.trim())}>
+          <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-blue-300">
+            3. Fine-tuning (angle, {emphasisHighlights.length} selected, instructions & screening questions)
+          </summary>
 
-        {/* Row 4: Job Description */}
-        <div className="mb-4">
-          <label className={labelClass}>7. Job Description (Paste here or directly in the LLM chat)</label>
-          <textarea
-            rows={5}
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Paste the full job description here so the prompt is 100% ready to copy and send..."
-            className="w-full p-3 rounded-xl bg-[#0a0f1d] border border-[#1f2937] text-white text-xs font-mono focus:border-[#6d8ead] outline-none leading-normal resize-y"
-          />
-        </div>
+          <div className="mt-3.5 space-y-4">
+            <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3.5 ${!isCvTailoringMode ? "opacity-55" : ""}`}>
+              <div>
+                <label htmlFor={`${dialogId}-angle`} className={labelClass}>Positioning angle</label>
+                <select
+                  id={`${dialogId}-angle`}
+                  value={strategyAngle}
+                  disabled={!isCvTailoringMode}
+                  onChange={(e) => setStrategyAngle(e.target.value as StrategyAngle)}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  {ANGLE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`${dialogId}-tone`} className={labelClass}>Writing tone</label>
+                <select
+                  id={`${dialogId}-tone`}
+                  value={tonePreset}
+                  disabled={!isCvTailoringMode}
+                  onChange={(e) => setTonePreset(e.target.value as TonePreset)}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  {TONE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor={`${dialogId}-length`} className={labelClass}>Target CV length</label>
+                <select
+                  id={`${dialogId}-length`}
+                  value={cvLengthMode}
+                  disabled={!isCvTailoringMode}
+                  onChange={(e) => setCvLengthMode(e.target.value as CvLengthMode)}
+                  className={`${fieldClass} cursor-pointer`}
+                >
+                  {LENGTH_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        {/* Row 5: Live Prompt Preview */}
-        <div className="rounded-xl border border-[#1f2937] bg-[#0a0f1d]/70 mb-5">
+            {isCvTailoringMode && (
+              <div className="ui-inset p-3.5 rounded-xl">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                  <span className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5" />
+                    Evidence emphasis ({emphasisHighlights.length} selected)
+                  </span>
+                  {highlightOptions.length > 0 && (
+                    <div className="flex gap-2">
+                      <button type="button" onClick={selectAllHighlights} className="ui-button ui-button--secondary text-xs">
+                        Select all
+                      </button>
+                      <button type="button" onClick={clearHighlights} className="ui-button ui-button--quiet text-xs">
+                        Clear selection
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {highlightOptions.length === 0 ? (
+                  <p className="text-xs text-slate-400">
+                    Add key achievements to your <strong className="text-slate-200">Master CV</strong> to prioritize specific evidence highlights here. Without selections, the job posting determines which Master CV evidence is emphasized.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs text-slate-400 mb-3">
+                      Without selections, the job posting determines which Master CV achievements are prioritized.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {highlightOptions.map((option) => {
+                        const isSelected = emphasisHighlights.includes(option.id);
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() => toggleHighlight(option.id)}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-left transition-colors ${
+                              isSelected
+                                ? "bg-[#10233f] border-blue-400/50 text-white"
+                                : "bg-[var(--ui-panel)] border-[var(--ui-border)] text-slate-300 hover:border-slate-500/40 hover:text-white"
+                            }`}
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-300 shrink-0 mt-0.5" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                            )}
+                            <span className="text-xs leading-relaxed font-medium">{option.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label htmlFor={`${dialogId}-instructions`} className={labelClass}>
+                  Additional instructions (optional)
+                </label>
+                <input
+                  id={`${dialogId}-instructions`}
+                  type="text"
+                  value={customInstructions}
+                  onChange={(e) => setCustomInstructions(e.target.value)}
+                  placeholder="e.g., highlight cross-functional delivery experience relevant to this team."
+                  className={fieldClass}
+                />
+              </div>
+              <div>
+                <label htmlFor={`${dialogId}-screening`} className={labelClass}>
+                  Portal / screening questions (one per line)
+                </label>
+                <textarea
+                  id={`${dialogId}-screening`}
+                  rows={2}
+                  value={screeningQuestionsText}
+                  onChange={(e) => setScreeningQuestionsText(e.target.value)}
+                  placeholder="e.g., Describe a complex project delivered with multiple stakeholders..."
+                  className={`${fieldClass} resize-y`}
+                />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        {/* Collapsible Prompt Preview */}
+        <div className="ui-inset rounded-xl mb-5">
           <button
             type="button"
             onClick={() => setShowPreview((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-[#6d8ead] hover:text-white transition-colors"
+            aria-expanded={showPreview}
+            className="ui-button ui-button--quiet w-full justify-between px-4 py-2.5 text-xs font-semibold text-blue-200"
           >
             <span>
-              View Full Generated Prompt ({prompt.length.toLocaleString()} characters · Master CV + {emphasisHighlights.length} priority highlights)
+              Prompt preview ({prompt.length.toLocaleString("en-US")} characters)
             </span>
             {showPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           {showPreview && (
-            <pre className="px-4 pb-4 max-h-64 overflow-auto text-[11px] leading-relaxed text-slate-300 whitespace-pre-wrap font-mono">
+            <pre className="px-4 pb-4 max-h-64 overflow-auto text-xs leading-relaxed text-slate-300 whitespace-pre-wrap font-mono">
               {prompt}
             </pre>
           )}
         </div>
 
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#10233f]/50 hover:bg-[#10233f] text-[#6d8ead] border border-[#6d8ead]/10 font-semibold text-sm transition-all"
-          >
+        {/* Actions */}
+        <div className="flex flex-wrap justify-end gap-3">
+          <button type="button" onClick={onClose} className="ui-button ui-button--secondary">
             Close
           </button>
           <button
             type="button"
             onClick={handleCopy}
-            className={`px-5 py-2 rounded-xl font-semibold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2 text-white ${
+            disabled={!jobDescription.trim() || masterCvSyncStatus === "loading"}
+            className={`ui-button px-5 font-semibold text-sm ${
               copied
-                ? "bg-emerald-600 hover:bg-emerald-600"
-                : "bg-gradient-to-r from-[#10233f] to-[#1d3d6b] hover:from-[#152d50] hover:to-[#244e88]"
+                ? "bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-600"
+                : "ui-button--primary"
             }`}
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copied ? "Prompt Copied!" : "Copy Personalized Prompt"}
+            {copied ? "Prompt copied" : "Copy prompt"}
           </button>
         </div>
+        {copyFailed && (
+          <div className="mt-3" role="alert">
+            <label htmlFor={`${dialogId}-manual-copy`} className="text-xs text-amber-200 block mb-1">
+              Your browser blocked clipboard access. Select this exact text and copy it with Ctrl+C. Prompt provenance is not saved until copying succeeds.
+            </label>
+            <textarea id={`${dialogId}-manual-copy`} readOnly value={prompt} rows={5} onFocus={(event) => event.currentTarget.select()} className="w-full rounded border border-amber-500/40 bg-[var(--ui-inset)] p-2 text-xs text-white font-mono" />
+          </div>
+        )}
       </div>
     </div>
   );
